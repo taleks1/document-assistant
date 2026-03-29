@@ -24,7 +24,7 @@ public class WebSecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**","/h2-console/**", "/index.html", "/", "/error", "/favicon.ico").permitAll()
+                        .requestMatchers("/api/auth/**","/h2-console/**", "/", "/error", "/favicon.ico").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
