@@ -1,14 +1,18 @@
 package documentassistant.model.entity;
 
+import documentassistant.model.User;
 import documentassistant.model.enums.DocumentRequestStatus;
 import documentassistant.model.enums.DocumentRequestType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -34,9 +38,9 @@ public class DocumentRequest {
     @Column(nullable = false, unique = true, length = 32)
     private String referenceNumber;
 
-    // TODO: After the auth branch merges, turn this into a proper @ManyToOne User.
-    @Column(nullable = false)
-    private Integer userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
@@ -55,6 +59,7 @@ public class DocumentRequest {
     @Column(nullable = false, length = 32)
     private DocumentRequestStatus status;
 
+    // Filled later when an admin rejects a request. Not touched on create.
     @Column(length = 2000)
     private String rejectionReason;
 

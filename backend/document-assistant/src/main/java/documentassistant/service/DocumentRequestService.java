@@ -15,13 +15,13 @@ public class DocumentRequestService {
 
     private final DocumentRequestRepository repository;
     private final ReferenceNumberGenerator referenceNumberGenerator;
-    private final CurrentUserService currentUserService;
+    private final UserService userService;
 
     @Transactional
     public DocumentRequestResponse create(CreateDocumentRequest request) {
         DocumentRequest documentRequest = DocumentRequest.builder()
                 .referenceNumber(referenceNumberGenerator.generate())
-                .userId(currentUserService.getCurrentUserId())
+                .user(userService.getCurrentUser())
                 .type(request.getType())
                 .title(request.getTitle().trim())
                 .description(request.getDescription().trim())

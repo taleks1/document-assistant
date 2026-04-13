@@ -19,11 +19,14 @@ public class DocumentRequestResponse {
     private Long id;
     private String referenceNumber;
     private Integer userId;
+    private String userFullName;
+    private String userEmail;
     private DocumentRequestType type;
     private String title;
     private String description;
     private String notes;
     private DocumentRequestStatus status;
+    private String rejectionReason;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -31,12 +34,15 @@ public class DocumentRequestResponse {
         return DocumentRequestResponse.builder()
                 .id(request.getId())
                 .referenceNumber(request.getReferenceNumber())
-                .userId(request.getUserId())
+                .userId(request.getUser().getId())
+                .userFullName(request.getUser().getFirstname() + " " + request.getUser().getLastname())
+                .userEmail(request.getUser().getEmail())
                 .type(request.getType())
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .notes(request.getNotes())
                 .status(request.getStatus())
+                .rejectionReason(request.getRejectionReason())
                 .createdAt(request.getCreatedAt())
                 .updatedAt(request.getUpdatedAt())
                 .build();
