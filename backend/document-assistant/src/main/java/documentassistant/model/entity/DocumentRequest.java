@@ -1,6 +1,6 @@
 package documentassistant.model.entity;
 
-import documentassistant.model.entity.User;
+import documentassistant.model.User;
 import documentassistant.model.enums.DocumentRequestStatus;
 import documentassistant.model.enums.DocumentRequestType;
 import jakarta.persistence.Column;
