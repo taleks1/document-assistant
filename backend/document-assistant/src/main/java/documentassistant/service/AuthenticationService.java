@@ -1,8 +1,8 @@
 package documentassistant.service;
 
 import documentassistant.exception.EmailAlreadyExistsException;
-import documentassistant.model.Role;
-import documentassistant.model.User;
+import documentassistant.model.entity.User;
+import documentassistant.model.enums.Role;
 import documentassistant.payload.AuthenticationRequest;
 import documentassistant.payload.AuthenticationResponse;
 import documentassistant.payload.RegisterRequest;

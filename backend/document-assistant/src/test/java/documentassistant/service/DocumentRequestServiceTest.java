@@ -1,7 +1,7 @@
 package documentassistant.service;
 
-import documentassistant.model.Role;
-import documentassistant.model.User;
+import documentassistant.model.entity.User;
+import documentassistant.model.enums.Role;
 import documentassistant.model.entity.DocumentRequest;
 import documentassistant.model.enums.DocumentRequestStatus;
 import documentassistant.model.enums.DocumentRequestType;

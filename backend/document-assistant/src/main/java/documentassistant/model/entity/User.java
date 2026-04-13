@@ -1,5 +1,6 @@
-package documentassistant.model;
+package documentassistant.model.entity;
 
+import documentassistant.model.enums.Role;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
