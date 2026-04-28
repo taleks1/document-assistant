@@ -32,6 +32,6 @@ build/
 ### VS Code ###
 .vscode/
 
-## OCR implementation
+## Environment variables
 .env
 backend/document-assistant/hs_err_pid53423.log
