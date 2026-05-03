@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class DocumentRequestService {
@@ -31,5 +33,13 @@ public class DocumentRequestService {
 
         DocumentRequest saved = repository.save(documentRequest);
         return DocumentRequestResponse.from(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DocumentRequestResponse> getAll() {
+        return repository.findAllByUser(userService.getCurrentUser())
+                .stream()
+                .map(DocumentRequestResponse::from)
+                .toList();
     }
 }
