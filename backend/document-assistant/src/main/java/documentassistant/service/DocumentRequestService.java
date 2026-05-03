@@ -1,5 +1,6 @@
 package documentassistant.service;
 
+import documentassistant.exception.ResourceNotFoundException;
 import documentassistant.model.entity.DocumentRequest;
 import documentassistant.model.enums.DocumentRequestStatus;
 import documentassistant.payload.CreateDocumentRequest;
@@ -41,5 +42,12 @@ public class DocumentRequestService {
                 .stream()
                 .map(DocumentRequestResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public DocumentRequestResponse getById(Long id) {
+        DocumentRequest request = repository.findByIdAndUser(id, userService.getCurrentUser())
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
+        return DocumentRequestResponse.from(request);
     }
 }
