@@ -21,10 +21,10 @@ public class OcrController {
     public ResponseEntity<Map<String, Object>> parseImage(@RequestParam String path) {
         try {
             String rawText = ocrService.extractTextFromImage(path);
-            Map<String, Object> parsedFields = parserService.parseWithGemini(rawText);
+            Map<String, Object> parsedFields = parserService.parseAndTranslate(rawText);
             return ResponseEntity.ok(Map.of(
                 "rawText", rawText,
-                "fields", parsedFields
+                "parsed", parsedFields
             ));
         } catch (TesseractException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
