@@ -22,8 +22,9 @@ public class ParserService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public Map<String, Object> parseAndTranslate(String rawText) {
-        String prompt = "You have raw text from a Macedonian ID card. Extract the fields into valid JSON using English keys only: name, surname, idNumber, birthDate, issueDate, expiryDate, nationality, gender. " +
+        String prompt = "You have raw text from a Macedonian ID card. Extract the fields into valid JSON using English keys only: name, surname, idNumber (the number under the photo - ALWAYS ONE LETTER + 7 DIGITS), embg (personal identification number), birthDate, issueDate, expiryDate, nationality, gender. " +
                 "Use the English text from the card if available. If the values are in Macedonian, translate them into English when you extract them. " +
+                "For more accurate data, compare the EMBG and birthDate - the first 7 numbers in the EMBG represent the date of birth in DDMMYYY format ( example birth date: 10.07.1994 -> 1007994...). " +
                 "Then return a second JSON object with the same field values translated into Macedonian. " +
                 "Return only valid JSON in the following structure:\n" +
                 "{\n  \"fields_en\": { ... },\n  \"fields_mk\": { ... }\n}\n\n" +
