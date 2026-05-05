@@ -25,6 +25,8 @@ public class UserController {
                         .lastname(user.getLastname())
                         .email(user.getEmail())
                         .role(user.getRole().name())
+                        .dateCreated(user.getDateCreated())
+                        .isActive(user.isActive())
                         .build()
         );
     }
