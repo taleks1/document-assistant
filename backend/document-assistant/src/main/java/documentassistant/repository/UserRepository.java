@@ -1,6 +1,6 @@
 package documentassistant.repository;
 
-import documentassistant.model.User;
+import documentassistant.model.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
