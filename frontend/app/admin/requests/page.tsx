@@ -203,32 +203,38 @@ export default function AdminRequestsPage() {
           </div>
 
 
-<div className="rounded-[22px] bg-[#f7f5f2] p-3 shadow-sm overflow-x-auto">
+<div className="rounded-[22px] bg-[oklch(0.97 0.006 160)] p-3 shadow-sm overflow-x-auto">
   <Table className="border-separate border-spacing-y-2 text-sm min-w-[1000px]">
     <TableHeader>
-      <TableRow className="border-0 bg-transparent hover:bg-transparent">
-        <TableHead className="rounded-l-[16px] bg-orange-200 px-3 py-3 text-center font-semibold text-orange-900">
-          ID на барање
-        </TableHead>
-        <TableHead className="bg-orange-200 px-3 py-3 text-center font-semibold text-orange-900">
-          Корисник
-        </TableHead>
-        <TableHead className="bg-orange-200 px-3 py-3 text-center font-semibold text-orange-900">
-          Тип
-        </TableHead>
-        <TableHead className="bg-orange-200 px-3 py-3 text-center font-semibold text-orange-900">
-          Наслов
-        </TableHead>
-        <TableHead className="bg-orange-200 px-3 py-3 text-center font-semibold text-orange-900">
-          Поднесено
-        </TableHead>
-        <TableHead className="bg-orange-200 px-3 py-3 text-center font-semibold text-orange-900">
-          Статус
-        </TableHead>
-        <TableHead className="rounded-r-[16px] bg-orange-200 px-3 py-3 text-center font-semibold text-orange-900">
-          Акции
-        </TableHead>
-      </TableRow>
+     <TableRow className="border-0 bg-transparent hover:bg-transparent">
+  <TableHead className="rounded-l-[16px] bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+    ID на барање
+  </TableHead>
+
+  <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+    Корисник
+  </TableHead>
+
+  <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+    Тип
+  </TableHead>
+
+  <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+    Наслов
+  </TableHead>
+
+  <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+    Поднесено
+  </TableHead>
+
+  <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+    Статус
+  </TableHead>
+
+  <TableHead className="rounded-r-[16px] bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+    Акции
+  </TableHead>
+</TableRow>
     </TableHeader>
 
     <TableBody>
