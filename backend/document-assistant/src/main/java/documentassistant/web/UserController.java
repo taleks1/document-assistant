@@ -21,6 +21,7 @@ public class UserController {
         User user = userService.getCurrentUser();
         return ResponseEntity.ok(
                 UserResponse.builder()
+                        .id(user.getId())
                         .firstname(user.getFirstname())
                         .lastname(user.getLastname())
                         .email(user.getEmail())
