@@ -179,7 +179,7 @@ export default function CitizenDashboard() {
   </CardContent>
 </Card>
       {/* Quick Actions */}
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
         <Link href="/citizen/new-request" className="block">
           <StatsCard
             title="Поднеси ново барање"
