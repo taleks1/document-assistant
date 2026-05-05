@@ -1,6 +1,6 @@
 package documentassistant.web;
 
-import documentassistant.model.User;
+import documentassistant.model.entity.User;
 import documentassistant.payload.UserResponse;
 import documentassistant.service.UserService;
 import lombok.RequiredArgsConstructor;

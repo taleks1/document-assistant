@@ -1,7 +1,7 @@
 package documentassistant.bootstrap;
 
-import documentassistant.model.Role;
-import documentassistant.model.User;
+import documentassistant.model.enums.Role;
+import documentassistant.model.entity.User;
 import documentassistant.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
