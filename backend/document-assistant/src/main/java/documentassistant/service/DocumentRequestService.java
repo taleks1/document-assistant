@@ -1,5 +1,6 @@
 package documentassistant.service;
 
+import documentassistant.exception.ResourceNotFoundException;
 import documentassistant.model.entity.DocumentRequest;
 import documentassistant.model.enums.DocumentRequestStatus;
 import documentassistant.payload.CreateDocumentRequest;
@@ -8,6 +9,8 @@ import documentassistant.repository.DocumentRequestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -31,5 +34,20 @@ public class DocumentRequestService {
 
         DocumentRequest saved = repository.save(documentRequest);
         return DocumentRequestResponse.from(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DocumentRequestResponse> getAll() {
+        return repository.findAllByUser(userService.getCurrentUser())
+                .stream()
+                .map(DocumentRequestResponse::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public DocumentRequestResponse getById(Long id) {
+        DocumentRequest request = repository.findByIdAndUser(id, userService.getCurrentUser())
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
+        return DocumentRequestResponse.from(request);
     }
 }

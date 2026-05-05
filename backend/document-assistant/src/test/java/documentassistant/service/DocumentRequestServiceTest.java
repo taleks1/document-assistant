@@ -1,5 +1,6 @@
 package documentassistant.service;
 
+import documentassistant.exception.ResourceNotFoundException;
 import documentassistant.model.entity.User;
 import documentassistant.model.enums.Role;
 import documentassistant.model.entity.DocumentRequest;
@@ -17,8 +18,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -105,5 +109,64 @@ class DocumentRequestServiceTest {
         DocumentRequestResponse response = service.create(request);
 
         assertThat(response.getNotes()).isNull();
+    }
+
+    @Test
+    void getAll_returnsOnlyCurrentUserRequests() {
+        DocumentRequest own1 = buildRequest(1L, "Permit A", mockUser);
+        DocumentRequest own2 = buildRequest(2L, "Permit B", mockUser);
+        when(userService.getCurrentUser()).thenReturn(mockUser);
+        when(repository.findAllByUser(mockUser)).thenReturn(List.of(own1, own2));
+
+        List<DocumentRequestResponse> result = service.getAll();
+
+        assertThat(result).hasSize(2);
+        assertThat(result).extracting(DocumentRequestResponse::getTitle)
+                .containsExactly("Permit A", "Permit B");
+    }
+
+    @Test
+    void getById_returnsRequest_whenOwnedByUser() {
+        DocumentRequest own = buildRequest(5L, "My Request", mockUser);
+        when(userService.getCurrentUser()).thenReturn(mockUser);
+        when(repository.findByIdAndUser(5L, mockUser)).thenReturn(Optional.of(own));
+
+        DocumentRequestResponse response = service.getById(5L);
+
+        assertThat(response.getId()).isEqualTo(5L);
+        assertThat(response.getTitle()).isEqualTo("My Request");
+    }
+
+    @Test
+    void getById_throwsNotFound_whenNotOwnedByUser() {
+        when(userService.getCurrentUser()).thenReturn(mockUser);
+        when(repository.findByIdAndUser(99L, mockUser)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getById(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void getById_throwsNotFound_whenIdDoesNotExist() {
+        when(userService.getCurrentUser()).thenReturn(mockUser);
+        when(repository.findByIdAndUser(0L, mockUser)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getById(0L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    private DocumentRequest buildRequest(Long id, String title, User user) {
+        Instant now = Instant.now();
+        return DocumentRequest.builder()
+                .id(id)
+                .referenceNumber("REQ-03052026-00001")
+                .user(user)
+                .type(DocumentRequestType.PERMIT)
+                .title(title)
+                .description("Some description")
+                .status(DocumentRequestStatus.SUBMITTED)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
     }
 }
