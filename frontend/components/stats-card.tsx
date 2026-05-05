@@ -15,14 +15,38 @@ interface StatsCardProps {
   className?: string
 }
 
-export function StatsCard({ title, value, description, icon, trend, className }: StatsCardProps) {
+export function StatsCard({
+  title,
+  value,
+  description,
+  icon,
+  trend,
+  className,
+}: StatsCardProps) {
   return (
-<Card className={cn("bg-white/80 backdrop-blur border border-black-100 shadow-sm rounded-2xl", className)}>      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold text-foreground">{value}</p>
-            {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    <Card
+      className={cn(
+        "rounded-2xl border border-border/70 bg-card shadow-[0_2px_10px_rgba(16,24,40,0.04)] backdrop-blur-sm",
+        className
+      )}
+    >
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1.5">
+            <p className="text-sm font-medium text-muted-foreground">
+              {title}
+            </p>
+
+            <p className="text-3xl font-bold tracking-tight text-foreground">
+              {value}
+            </p>
+
+            {description && (
+              <p className="text-xs text-muted-foreground">
+                {description}
+              </p>
+            )}
+
             {trend && (
               <p
                 className={cn(
@@ -30,16 +54,15 @@ export function StatsCard({ title, value, description, icon, trend, className }:
                   trend.isPositive ? "text-success" : "text-destructive"
                 )}
               >
-                {trend.isPositive ? "+" : "-"}{Math.abs(trend.value)}% од последниот месец
+                {trend.isPositive ? "+" : "-"}
+                {Math.abs(trend.value)}% од последниот месец
               </p>
             )}
           </div>
 
-          {/* ICON */}
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm border border-gray-200">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-secondary text-primary shadow-[0_1px_4px_rgba(16,24,40,0.03)]">
             {icon}
           </div>
-
         </div>
       </CardContent>
     </Card>

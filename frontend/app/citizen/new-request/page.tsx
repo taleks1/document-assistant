@@ -375,7 +375,7 @@ export default function NewRequestPage() {
             </AlertDescription>
           </Alert>
 
-          <Card className="border-none bg-transparent shadow-none">
+          <Card className="border-none bg-white shadow-none">
             <CardHeader>
               <CardTitle>Извлечени информации</CardTitle>
               <CardDescription>
@@ -472,7 +472,7 @@ export default function NewRequestPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-none bg-transparent shadow-none">
+          <Card className="border-none bg-white shadow-none">
             <CardHeader>
               <CardTitle>Детали за барањето</CardTitle>
               <CardDescription>Внесете дополнителни информации за вашето барање</CardDescription>
@@ -561,7 +561,7 @@ export default function NewRequestPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-none bg-transparent shadow-none">
+          <Card className="border-none bg-white shadow-none">
             <CardHeader>
               <CardTitle>Дополнителни прилози</CardTitle>
               <CardDescription>

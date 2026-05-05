@@ -81,9 +81,6 @@ export default function UsersPage() {
     return matchesSearch && matchesStatus && matchesRole
   })
 
-  const activeUsers = mockUsers.filter((u) => u.status === "active").length
-  const totalRequests = mockUsers.reduce((acc, u) => acc + u.requestCount, 0)
-
   return (
     <div className="p-6 lg:p-8">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -92,33 +89,12 @@ export default function UsersPage() {
           <p className="text-muted-foreground">Управување со кориснички сметки и пристап</p>
         </div>
       </div>
-
-<div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 items-stretch">        <StatsCard
-          title="Вкупно корисници"
-          value={mockUsers.length}
-          icon={<Users className="h-6 w-6 text-primary" />}
-        />
-        <StatsCard
-          title="Активни корисници"
-          value={activeUsers}
-          icon={<UserCheck className="h-6 w-6 text-success" />}
-        />
-        <StatsCard
-          title="Неактивни корисници"
-          value={mockUsers.length - activeUsers}
-          icon={<UserX className="h-6 w-6 text-muted-foreground" />}
-        />
-        <StatsCard
-          title="Вкупно барања"
-          value={totalRequests}
-          icon={<Clock className="h-6 w-6 text-info" />}
-        />
-      </div>
-<Separator />
-<Card className="border-none shadow-none bg-transparent">        <CardHeader>
+      <Separator />
+<Card className="border-none shadow-none bg-transparent">        
+  <CardHeader>
           <CardTitle>Сите корисници</CardTitle>
           <CardDescription>
-            {filteredUsers.length} пронајдени корисник{filteredUsers.length !== 1 ? "и" : ""}
+            {filteredUsers.length} пронајден{filteredUsers.length !== 1 ? "и" : ""} {filteredUsers.length !== 1 ? "корисници" : "корисник"}
           </CardDescription>
         </CardHeader>
 
@@ -160,31 +136,36 @@ export default function UsersPage() {
             </div>
           </div>
 
-<div className="rounded-[22px] bg-[#f7f5f2] p-3 shadow-sm overflow-x-auto">
+<div className="rounded-[22px] bg-[oklch(0.97 0.006 160)] p-3 shadow-sm overflow-x-auto">
   <Table className="border-separate border-spacing-y-2 text-sm min-w-[900px]">
     
     <TableHeader>
-      <TableRow className="border-0 bg-transparent hover:bg-transparent">
-        <TableHead className="rounded-l-[16px] bg-orange-200 px-3 py-3 text-center font-semibold text-orange-900">
-          Корисник
-        </TableHead>
-        <TableHead className="bg-orange-200 px-3 py-3 text-center font-semibold text-orange-900">
-          Улога
-        </TableHead>
-        <TableHead className="bg-orange-200 px-3 py-3 text-center font-semibold text-orange-900">
-          Статус
-        </TableHead>
-        <TableHead className="bg-orange-200 px-3 py-3 text-center font-semibold text-orange-900">
-          Барања
-        </TableHead>
-        <TableHead className="bg-orange-200 px-3 py-3 text-center font-semibold text-orange-900">
-          Креиран
-        </TableHead>
-        <TableHead className="rounded-r-[16px] bg-orange-200 px-3 py-3 text-center font-semibold text-orange-900">
-          Акции
-        </TableHead>
-      </TableRow>
-    </TableHeader>
+  <TableRow className="border-0 bg-transparent hover:bg-transparent">
+    <TableHead className="rounded-l-[16px] bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+      Корисник
+    </TableHead>
+
+    <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+      Улога
+    </TableHead>
+
+    <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+      Статус
+    </TableHead>
+
+    <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+      Барања
+    </TableHead>
+
+    <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+      Креиран
+    </TableHead>
+
+    <TableHead className="rounded-r-[16px] bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+      Акции
+    </TableHead>
+  </TableRow>
+</TableHeader>
 
     <TableBody>
       {filteredUsers.length === 0 ? (

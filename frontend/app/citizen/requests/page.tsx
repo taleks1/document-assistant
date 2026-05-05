@@ -75,7 +75,8 @@ export default function MyRequestsPage() {
       </div>
       <Separator />
 
-<Card className="border-none shadow-none bg-transparent">        <CardHeader>
+<Card className="border-none shadow-none bg-transparent">     
+     <CardHeader>
           <CardTitle>Сите барања</CardTitle>
           <CardDescription>
             {filteredRequests.length} барањ{filteredRequests.length !== 1 ? "а" : "е"} пронајдени
@@ -135,29 +136,35 @@ export default function MyRequestsPage() {
               </Select>
             </div>
           </div>
-<div className="rounded-[28px] bg-[#f3f1ee] p-4 shadow-sm">
-  <Table className="border-separate border-spacing-y-3">
+ <div className="overflow-x-auto rounded-[22px] bg-card p-3 shadow-sm">
+  <Table className="min-w-[1000px] border-separate border-spacing-y-2 text-sm">
     <TableHeader>
       <TableRow className="overflow-hidden border-0 bg-transparent hover:bg-transparent">
-        <TableHead className="rounded-l-[22px] bg-emerald-500 px-5 py-4 text-center text-white font-semibold">
+        <TableHead className="rounded-l-[16px] bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
           ID на барање
         </TableHead>
-        <TableHead className="bg-emerald-500 px-5 py-4 text-center text-white font-semibold">
+
+        <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
           Тип
         </TableHead>
-        <TableHead className="bg-emerald-500 px-5 py-4 text-center text-white font-semibold">
+
+        <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
           Наслов
         </TableHead>
-        <TableHead className="bg-emerald-500 px-5 py-4 text-center text-white font-semibold">
+
+        <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
           Поднесено
         </TableHead>
-        <TableHead className="bg-emerald-500 px-5 py-4 text-center text-white font-semibold">
+
+        <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
           Последно ажурирање
         </TableHead>
-        <TableHead className="bg-emerald-500 px-5 py-4 text-center text-white font-semibold">
+
+        <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
           Статус
         </TableHead>
-        <TableHead className="rounded-r-[22px] bg-emerald-500 px-5 py-4 text-center text-white font-semibold">
+
+        <TableHead className="rounded-r-[16px] bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
           Акции
         </TableHead>
       </TableRow>
@@ -168,7 +175,7 @@ export default function MyRequestsPage() {
         <TableRow className="border-0 hover:bg-transparent">
           <TableCell
             colSpan={7}
-            className="h-32 rounded-[20px] bg-white text-center text-muted-foreground shadow-sm align-middle"
+            className="h-24 rounded-[14px] bg-white align-middle text-center text-muted-foreground shadow-sm"
           >
             Нема пронајдени барања според избраните критериуми
           </TableCell>
@@ -179,47 +186,62 @@ export default function MyRequestsPage() {
             key={request.id}
             className="overflow-hidden border-0 bg-transparent hover:bg-transparent"
           >
-            <TableCell className="rounded-l-[20px] border border-r-0 border-[#d9d9d9] bg-white px-5 py-5 text-center align-middle font-medium text-slate-700 shadow-sm">
+            <TableCell className="rounded-l-[14px] border border-r-0 border-border bg-white px-3 py-3 text-center align-middle font-medium text-slate-700 shadow-sm">
               {request.id}
             </TableCell>
 
-            <TableCell className="border-y border-[#d9d9d9] bg-white px-5 py-5 text-center align-middle text-slate-700 shadow-sm">
+            <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
               {requestTypeLabels[request.type] || request.type}
             </TableCell>
 
-            <TableCell className="max-w-[220px] truncate border-y border-[#d9d9d9] bg-white px-5 py-5 text-center align-middle text-slate-700 shadow-sm">
+            <TableCell className="max-w-[160px] truncate border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
               {request.title}
             </TableCell>
 
-            <TableCell className="border-y border-[#d9d9d9] bg-white px-5 py-5 text-center align-middle text-slate-700 shadow-sm">
+            <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
               {new Date(request.createdAt).toLocaleDateString()}
             </TableCell>
 
-            <TableCell className="border-y border-[#d9d9d9] bg-white px-5 py-5 text-center align-middle text-slate-700 shadow-sm">
+            <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
               {new Date(request.updatedAt).toLocaleDateString()}
             </TableCell>
 
-            <TableCell className="border-y border-[#d9d9d9] bg-white px-5 py-5 text-center align-middle shadow-sm">
+            <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle shadow-sm">
               <div className="flex justify-center">
                 <StatusBadge status={request.status} />
               </div>
             </TableCell>
 
-            <TableCell className="rounded-r-[20px] border border-l-0 border-[#d9d9d9] bg-white px-5 py-5 text-center align-middle shadow-sm">
+            <TableCell className="rounded-r-[14px] border border-l-0 border-border bg-white px-3 py-3 text-center align-middle shadow-sm">
               <div className="flex items-center justify-center gap-2">
                 <Link href={`/citizen/requests/${request.id}`}>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" title="Прегледај">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    title="Прегледај"
+                  >
                     <Eye className="h-4 w-4" />
                   </Button>
                 </Link>
 
                 <Link href={`/citizen/tracking?id=${request.id}`}>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" title="Следи">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    title="Следи"
+                  >
                     <Search className="h-4 w-4" />
                   </Button>
                 </Link>
 
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" title="Преземи">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full"
+                  title="Преземи"
+                >
                   <Download className="h-4 w-4" />
                 </Button>
               </div>

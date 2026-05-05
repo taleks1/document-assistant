@@ -32,7 +32,6 @@ const citizenNavItems: NavItem[] = [
   { label: "Креирај ново барање", href: "/citizen/new-request", icon: <FilePlus className="h-5 w-5" /> },
   { label: "Мои барања", href: "/citizen/requests", icon: <FileText className="h-5 w-5" /> },
   { label: "Следење статус", href: "/citizen/tracking", icon: <Search className="h-5 w-5" /> },
-  { label: "Помош / chatbot", href: "/citizen/help", icon: <HelpCircle className="h-5 w-5" /> },
   { label: "Профил", href: "/citizen/profile", icon: <User className="h-5 w-5" /> },
 ]
 

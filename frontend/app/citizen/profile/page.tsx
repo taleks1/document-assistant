@@ -80,8 +80,7 @@ export default function ProfilePage() {
         </Alert>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
+      <div className="grid gap-6">
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <Card className="border-none bg-transparent shadow-none">
               <CardHeader className="flex flex-row items-center justify-between">
@@ -175,7 +174,11 @@ export default function ProfilePage() {
 
           <Separator />
 
-          <Card className="border-none bg-transparent shadow-none">
+        </div>
+
+    <div className="grid lg:grid-cols-3 gap-6">
+  <div className="lg:col-span-1">
+    <Card className="border-none bg-transparent shadow-none">
             <CardHeader>
               <CardTitle>Брзи акции</CardTitle>
             </CardHeader>
@@ -198,48 +201,9 @@ export default function ProfilePage() {
               </Button>
             </CardContent>
           </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Преглед на сметка</CardTitle>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                  <User className="h-8 w-8 text-primary" />
-                </div>
-
-                <div>
-                  <p className="font-semibold">{form.watch("name")}</p>
-                  <p className="text-sm text-muted-foreground">Граѓанин</p>
-                </div>
-              </div>
-
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Член од</span>
-                  <span>Јан 2024</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Вкупно барања</span>
-                  <span>{stats.total}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Одобрени</span>
-                  <span className="text-success">{stats.approved}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Во тек</span>
-                  <span className="text-warning">{stats.processing}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+  </div>
+</div>
       </div>
-    </div>
+  
   )
 }
