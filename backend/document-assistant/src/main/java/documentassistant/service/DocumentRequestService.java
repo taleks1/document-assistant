@@ -1,10 +1,12 @@
 package documentassistant.service;
 
+import documentassistant.exception.InvalidRequestStateException;
 import documentassistant.exception.ResourceNotFoundException;
 import documentassistant.model.entity.DocumentRequest;
 import documentassistant.model.enums.DocumentRequestStatus;
 import documentassistant.payload.CreateDocumentRequest;
 import documentassistant.payload.DocumentRequestResponse;
+import documentassistant.payload.UpdateDocumentRequest;
 import documentassistant.repository.DocumentRequestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -49,5 +51,25 @@ public class DocumentRequestService {
         DocumentRequest request = repository.findByIdAndUser(id, userService.getCurrentUser())
                 .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
         return DocumentRequestResponse.from(request);
+    }
+
+    @Transactional
+    public DocumentRequestResponse update(Long id, UpdateDocumentRequest request) {
+        DocumentRequest documentRequest = repository.findByIdAndUser(id, userService.getCurrentUser())
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
+
+        if (documentRequest.getStatus() != DocumentRequestStatus.SUBMITTED) {
+            throw new InvalidRequestStateException("Only requests in SUBMITTED status can be updated");
+        }
+
+        documentRequest.setTitle(request.getTitle().trim());
+        documentRequest.setDescription(request.getDescription().trim());
+        documentRequest.setNotes(
+                request.getNotes() == null ? null : request.getNotes().trim()
+        );
+
+        DocumentRequest updated = repository.save(documentRequest);
+
+        return DocumentRequestResponse.from(updated);
     }
 }
