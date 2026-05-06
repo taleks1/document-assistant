@@ -1,6 +1,8 @@
 package documentassistant.web.handler;
 
 import documentassistant.exception.EmailAlreadyExistsException;
+import documentassistant.exception.InvalidRequestStateException;
+import documentassistant.exception.MissingRejectionReasonException;
 import documentassistant.exception.UserNotFoundException;
 import documentassistant.exception.ResourceNotFoundException;
 import documentassistant.payload.ErrorResponse;
@@ -73,6 +75,26 @@ public class GlobalExceptionHandler {
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .status(HttpStatus.BAD_REQUEST.value())
                 .message(errorMessage)
+                .timestamp(LocalDateTime.now())
+                .build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(InvalidRequestStateException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidRequestStateException(InvalidRequestStateException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(MissingRejectionReasonException.class)
+    public ResponseEntity<ErrorResponse> handleMissingRejectionReasonException(MissingRejectionReasonException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(ex.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
