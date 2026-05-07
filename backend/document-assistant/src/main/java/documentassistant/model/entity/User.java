@@ -48,6 +48,26 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    private String embg;
+
+    private String gender;
+
+    private String nationality;
+
+    private String phone;
+
+    private String city;
+
+    private String address;
+
+    private String cardId;
+
+    private LocalDate birthDate;
+
+    private LocalDate cardIssueDate;
+
+    private LocalDate cardExpiryDate;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role.name()));

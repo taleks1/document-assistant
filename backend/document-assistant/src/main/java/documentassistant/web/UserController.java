@@ -1,7 +1,7 @@
 package documentassistant.web;
 
 import documentassistant.model.entity.User;
-import documentassistant.payload.UserResponse;
+import documentassistant.payload.FullUserResponse;
 import documentassistant.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,18 +17,8 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getAuthenticatedUser() {
+    public ResponseEntity<FullUserResponse> getAuthenticatedUser() {
         User user = userService.getCurrentUser();
-        return ResponseEntity.ok(
-                UserResponse.builder()
-                        .id(user.getId())
-                        .firstname(user.getFirstname())
-                        .lastname(user.getLastname())
-                        .email(user.getEmail())
-                        .role(user.getRole().name())
-                        .dateCreated(user.getDateCreated())
-                        .isActive(user.isActive())
-                        .build()
-        );
+        return ResponseEntity.ok(FullUserResponse.from(user));
     }
 }

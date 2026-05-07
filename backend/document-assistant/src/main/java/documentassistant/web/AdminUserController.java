@@ -24,33 +24,12 @@ public class AdminUserController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(
-                userService.getAllUsers(PageRequest.of(page, size))
-                        .map(user -> UserResponse.builder()
-                                .id(user.getId())
-                                .firstname(user.getFirstname())
-                                .lastname(user.getLastname())
-                                .email(user.getEmail())
-                                .role(user.getRole().name())
-                                .isActive(user.isActive())
-                                .dateCreated(user.getDateCreated())
-                                .build())
-        );
+        return ResponseEntity.ok(userService.getAllUsers(PageRequest.of(page, size)).map(UserResponse::from));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Integer id) {
         User user = userService.getUserById(id);
-        return ResponseEntity.ok(
-                UserResponse.builder()
-                        .id(user.getId())
-                        .firstname(user.getFirstname())
-                        .lastname(user.getLastname())
-                        .email(user.getEmail())
-                        .role(user.getRole().name())
-                        .isActive(user.isActive())
-                        .dateCreated(user.getDateCreated())
-                        .build()
-        );
+        return ResponseEntity.ok(UserResponse.from(user));
     }
 }
