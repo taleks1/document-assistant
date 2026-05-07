@@ -4,6 +4,8 @@ import documentassistant.payload.DocumentRequestResponse;
 import documentassistant.payload.RejectRequest;
 import documentassistant.service.AdminRequestService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,8 +19,11 @@ public class AdminRequestController {
     private final AdminRequestService adminRequestService;
 
     @GetMapping
-    public ResponseEntity<List<DocumentRequestResponse>> getAll() {
-        return ResponseEntity.ok(adminRequestService.getAll());
+    public ResponseEntity<Page<DocumentRequestResponse>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(adminRequestService.getAll(PageRequest.of(page, size)));
     }
 
     @GetMapping("/{id}")

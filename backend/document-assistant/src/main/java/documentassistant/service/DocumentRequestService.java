@@ -7,6 +7,8 @@ import documentassistant.payload.CreateDocumentRequest;
 import documentassistant.payload.DocumentRequestResponse;
 import documentassistant.repository.DocumentRequestRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,11 +39,9 @@ public class DocumentRequestService {
     }
 
     @Transactional(readOnly = true)
-    public List<DocumentRequestResponse> getAll() {
-        return repository.findAllByUser(userService.getCurrentUser())
-                .stream()
-                .map(DocumentRequestResponse::from)
-                .toList();
+    public Page<DocumentRequestResponse> getAll(Pageable pageable) {
+        return repository.findAllByUser(userService.getCurrentUser(), pageable)
+                .map(DocumentRequestResponse::from);
     }
 
     @Transactional(readOnly = true)

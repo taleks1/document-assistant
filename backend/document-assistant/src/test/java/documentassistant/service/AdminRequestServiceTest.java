@@ -14,6 +14,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.Instant;
 import java.util.List;
@@ -58,14 +61,21 @@ class AdminRequestServiceTest {
     void getAll_returnsAllRequests() {
         DocumentRequest r1 = buildRequest(1L, "Request A", citizen1);
         DocumentRequest r2 = buildRequest(2L, "Request B", citizen2);
-        when(repository.findAll()).thenReturn(List.of(r1, r2));
 
-        List<DocumentRequestResponse> result = service.getAll();
+        when(repository.findAll(PageRequest.of(0, 10)))
+                .thenReturn(new PageImpl<>(List.of(r1, r2)));
 
-        assertThat(result).hasSize(2);
-        assertThat(result).extracting(DocumentRequestResponse::getTitle)
+        Page<DocumentRequestResponse> result =
+                service.getAll(PageRequest.of(0, 10));
+
+        assertThat(result.getContent()).hasSize(2);
+
+        assertThat(result.getContent())
+                .extracting(DocumentRequestResponse::getTitle)
                 .containsExactly("Request A", "Request B");
-        assertThat(result).extracting(DocumentRequestResponse::getUserEmail)
+
+        assertThat(result.getContent())
+                .extracting(DocumentRequestResponse::getUserEmail)
                 .containsExactly("john@example.com", "jane@example.com");
     }
 

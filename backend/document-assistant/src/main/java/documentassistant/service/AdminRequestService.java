@@ -8,6 +8,8 @@ import documentassistant.model.enums.DocumentRequestStatus;
 import documentassistant.payload.DocumentRequestResponse;
 import documentassistant.repository.DocumentRequestRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,11 +22,9 @@ public class AdminRequestService {
     private final DocumentRequestRepository repository;
 
     @Transactional(readOnly = true)
-    public List<DocumentRequestResponse> getAll() {
-        return repository.findAll()
-                .stream()
-                .map(DocumentRequestResponse::from)
-                .toList();
+    public Page<DocumentRequestResponse> getAll(Pageable pageable) {
+        return repository.findAll(pageable)
+                .map(DocumentRequestResponse::from);
     }
 
     @Transactional(readOnly = true)
