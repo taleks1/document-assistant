@@ -16,6 +16,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.Instant;
 import java.util.List;
@@ -115,16 +118,21 @@ class DocumentRequestServiceTest {
     void getAll_returnsOnlyCurrentUserRequests() {
         DocumentRequest own1 = buildRequest(1L, "Permit A", mockUser);
         DocumentRequest own2 = buildRequest(2L, "Permit B", mockUser);
+
         when(userService.getCurrentUser()).thenReturn(mockUser);
-        when(repository.findAllByUser(mockUser)).thenReturn(List.of(own1, own2));
 
-        List<DocumentRequestResponse> result = service.getAll();
+        when(repository.findAllByUser(mockUser, PageRequest.of(0, 10)))
+                .thenReturn(new PageImpl<>(List.of(own1, own2)));
 
-        assertThat(result).hasSize(2);
-        assertThat(result).extracting(DocumentRequestResponse::getTitle)
+        Page<DocumentRequestResponse> result =
+                service.getAll(PageRequest.of(0, 10));
+
+        assertThat(result.getContent()).hasSize(2);
+
+        assertThat(result.getContent())
+                .extracting(DocumentRequestResponse::getTitle)
                 .containsExactly("Permit A", "Permit B");
     }
-
     @Test
     void getById_returnsRequest_whenOwnedByUser() {
         DocumentRequest own = buildRequest(5L, "My Request", mockUser);

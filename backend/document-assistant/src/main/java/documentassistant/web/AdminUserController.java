@@ -4,11 +4,10 @@ import documentassistant.model.entity.User;
 import documentassistant.payload.UserResponse;
 import documentassistant.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,9 +20,12 @@ public class AdminUserController {
     private final UserService userService;
 
     @GetMapping()
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
+    public ResponseEntity<Page<UserResponse>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
         return ResponseEntity.ok(
-                userService.getAllUsers().stream()
+                userService.getAllUsers(PageRequest.of(page, size))
                         .map(user -> UserResponse.builder()
                                 .id(user.getId())
                                 .firstname(user.getFirstname())
@@ -33,7 +35,6 @@ public class AdminUserController {
                                 .isActive(user.isActive())
                                 .dateCreated(user.getDateCreated())
                                 .build())
-                        .collect(Collectors.toList())
         );
     }
 
