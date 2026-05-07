@@ -19,8 +19,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Upload, FileText, Loader2, CheckCircle, X, Brain } from "lucide-react"
-import { mockRequests } from "@/lib/mock-data"
+import { Upload, FileText, Loader2, CheckCircle, X, Brain, AlertCircle } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
 
 const requestTypeLabels: Record<string, string> = {
   request: "Барање",
@@ -50,15 +52,26 @@ const newRequestSchema = z.object({
 
 type NewRequestFormValues = z.infer<typeof newRequestSchema>
 
+function dotDateToIso(dot: string): string {
+  if (!dot || !dot.includes(".")) return dot ?? ""
+  const [dd, mm, yyyy] = dot.split(".")
+  return `${yyyy}-${mm}-${dd}`
+}
+
+
 export default function NewRequestPage() {
   const router = useRouter()
+  const { token } = useAuth()
 
   const [step, setStep] = useState<"upload" | "form" | "preview">("upload")
   const [isExtracting, setIsExtracting] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([])
+  const [ocrUsed, setOcrUsed] = useState(false)
+  const [ocrError, setOcrError] = useState<string | null>(null)
   const [submittedData, setSubmittedData] = useState<NewRequestFormValues | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const form = useForm<NewRequestFormValues>({
     resolver: zodResolver(newRequestSchema),
@@ -81,17 +94,17 @@ export default function NewRequestPage() {
   const handleFileDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     const file = e.dataTransfer.files[0]
-
     if (file && (file.type.includes("image") || file.type === "application/pdf")) {
       setUploadedFile(file)
+      setOcrError(null)
     }
   }, [])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-
     if (file) {
       setUploadedFile(file)
+      setOcrError(null)
     }
   }, [])
 
@@ -99,85 +112,103 @@ export default function NewRequestPage() {
     if (!uploadedFile) return
 
     setIsExtracting(true)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    setOcrError(null)
 
-    const userRequest = mockRequests.find((r) => r.userId === "1")
+    try {
+      const formData = new FormData()
+      formData.append("file", uploadedFile)
 
-    form.reset({
-      firstName: userRequest?.extractedData?.firstName ?? "",
-      lastName: userRequest?.extractedData?.lastName ?? "",
-      idNumber: userRequest?.extractedData?.idNumber ?? "",
-      address: userRequest?.extractedData?.address ?? "",
-      dateOfBirth: userRequest?.extractedData?.dateOfBirth ?? "",
-      embg: userRequest?.extractedData?.embg ?? "",
-      documentExpiryDate: userRequest?.extractedData?.documentExpiryDate ?? "",
-      requestType: userRequest?.type ?? "request",
-      requestTitle: userRequest?.title ?? "",
-      description: userRequest?.description ?? "",
-      notes: userRequest?.notes ?? "",
-    })
+      const res = await fetch(`${API_BASE}/api/ocr/upload`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      })
 
-    setIsExtracting(false)
-    setStep("form")
+      if (!res.ok) {
+        setOcrError("Неуспешно извлекување на податоци. Обидете се повторно или прескокнете.")
+        return
+      }
+
+      const data = await res.json()
+      const fields = data?.parsed?.fields_en ?? {}
+      const hasData = !!(fields.name || fields.surname || fields.idNumber || fields.embg)
+
+      if (!hasData) {
+        setOcrError("AI не успеа да извлече податоци од документот. Обидете се со подобра слика или прескокнете.")
+        return
+      }
+
+      form.reset({
+        firstName: fields.name ?? "",
+        lastName: fields.surname ?? "",
+        idNumber: fields.idNumber ?? "",
+        address: "",
+        dateOfBirth: dotDateToIso(fields.birthDate ?? ""),
+        embg: String(fields.embg ?? ""),
+        documentExpiryDate: dotDateToIso(fields.expiryDate ?? ""),
+        requestType: "request",
+        requestTitle: "",
+        description: "",
+        notes: "",
+      })
+
+      setOcrUsed(true)
+      setStep("form")
+    } catch {
+      setOcrError("Неуспешно извлекување на податоци. Обидете се повторно или прескокнете.")
+    } finally {
+      setIsExtracting(false)
+    }
   }
 
   const onFormSubmit = (values: NewRequestFormValues) => {
     setSubmittedData(values)
     setStep("preview")
-    console.log(values)
   }
 
   const handleSubmitFinal = async () => {
     if (!submittedData) return
 
     setIsSubmitting(true)
+    setSubmitError(null)
 
     try {
-      const newRequest = {
-        id: `REQ-${Date.now()}`,
-        userId: "1",
-        type: submittedData.requestType,
-        title: submittedData.requestTitle,
-        description: submittedData.description,
-        notes: submittedData.notes ?? "",
-        status: "sent",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        extractedData: {
-          firstName: submittedData.firstName,
-          lastName: submittedData.lastName,
-          idNumber: submittedData.idNumber,
-          address: submittedData.address,
-          dateOfBirth: submittedData.dateOfBirth,
-          embg: submittedData.embg,
-          documentExpiryDate: submittedData.documentExpiryDate,
+      const res = await fetch(`${API_BASE}/api/requests`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        attachments: [
-          ...(uploadedFile ? [uploadedFile.name] : []),
-          ...additionalFiles.map((file) => file.name),
-        ],
-        statusHistory: [
-          {
-            status: "sent",
-            date: new Date().toISOString(),
-            note: "Барањето е успешно поднесено.",
-          },
-        ],
+        body: JSON.stringify({
+          type: submittedData.requestType.toUpperCase(),
+          title: submittedData.requestTitle,
+          description: submittedData.description,
+          notes: submittedData.notes || null,
+        }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message ?? "Неуспешно поднесување на барањето.")
       }
 
-      console.log("FINAL SUBMIT:", newRequest)
+      const created = await res.json()
+      const requestId: number = created.id
 
-      // Тука подоцна ќе ставиш backend/API повик
-      // await fetch("/api/requests", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(newRequest),
-      // })
+      if (additionalFiles.length > 0) {
+        const fileForm = new FormData()
+        additionalFiles.forEach((f) => fileForm.append("files", f))
 
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+        await fetch(`${API_BASE}/api/requests/${requestId}/files`, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: fileForm,
+        })
+      }
+
       router.push("/citizen/requests")
-    } catch (error) {
-      console.error("Грешка при поднесување:", error)
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Грешка при поднесување.")
     } finally {
       setIsSubmitting(false)
     }
@@ -302,10 +333,10 @@ export default function NewRequestPage() {
 
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       className="mt-4"
-                      onClick={() => setUploadedFile(null)}
+                      onClick={() => { setUploadedFile(null); setOcrError(null) }}
                     >
                       Отстрани и прикачи друг документ
                     </Button>
@@ -340,26 +371,44 @@ export default function NewRequestPage() {
                 )}
               </div>
 
-              {uploadedFile && (
+              {ocrError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{ocrError}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex flex-col gap-2">
+                {uploadedFile && (
+                  <Button
+                    type="button"
+                    className="w-full gap-2"
+                    onClick={handleExtract}
+                    disabled={isExtracting}
+                  >
+                    {isExtracting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Се извлекуваат податоци...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="h-4 w-4" />
+                        Извлечи информации со AI
+                      </>
+                    )}
+                  </Button>
+                )}
                 <Button
                   type="button"
-                  className="w-full gap-2"
-                  onClick={handleExtract}
+                  variant="ghost"
+                  className="w-full text-muted-foreground"
+                  onClick={() => setStep("form")}
                   disabled={isExtracting}
                 >
-                  {isExtracting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Се извлекуваат податоци...
-                    </>
-                  ) : (
-                    <>
-                      <Brain className="h-4 w-4" />
-                      Извлечи информации со AI
-                    </>
-                  )}
+                  Прескокни и пополни рачно
                 </Button>
-              )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -367,20 +416,15 @@ export default function NewRequestPage() {
 
       {step === "form" && (
         <form onSubmit={form.handleSubmit(onFormSubmit)} className="mx-auto max-w-3xl space-y-6">
-          <Alert className="border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-700">
-              Податоците се успешно извлечени од вашиот документ. Проверете ги и изменете ако е
-              потребно.
-            </AlertDescription>
-          </Alert>
 
           <Card className="border-none bg-white shadow-none">
             <CardHeader>
-              <CardTitle>Извлечени информации</CardTitle>
-              <CardDescription>
-                Проверете ги и изменете ги AI-извлечените податоци од вашиот документ
-              </CardDescription>
+              <CardTitle>Лични податоци</CardTitle>
+              {ocrUsed && (
+                <CardDescription>
+                  Проверете ги и изменете ги податоците ако не се правилни
+                </CardDescription>
+              )}
             </CardHeader>
 
             <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -724,6 +768,13 @@ export default function NewRequestPage() {
               </div>
             </CardContent>
           </Card>
+
+          {submitError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          )}
 
           <div className="flex justify-between">
             <Button type="button" variant="outline" onClick={() => setStep("form")}>
