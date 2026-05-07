@@ -5,9 +5,11 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import javax.crypto.SecretKey;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -19,6 +21,11 @@ public class JwtService {
 
     @Value("${application.security.jwt.secret-key}")
     private String secretKey;
+
+    @PostConstruct
+    public void validateSecretKey() {
+        Assert.hasText(secretKey, "JWT Secret key must not be empty! Please check your application.properties or .env file.");
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
