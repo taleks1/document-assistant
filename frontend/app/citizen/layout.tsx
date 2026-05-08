@@ -10,16 +10,24 @@ export default function CitizenLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (!user) {
+    if (!isLoading && !user) {
       router.push("/login")
-    } else if (user.role !== "citizen") {
+    } else if (!isLoading && user && user.role !== "citizen") {
       router.push("/admin")
     }
-  }, [user, router])
+  }, [user, isLoading, router])
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p className="text-muted-foreground">Проверка на сесија...</p>
+      </div>
+    )
+  }
 
   if (!user || user.role !== "citizen") {
     return null
