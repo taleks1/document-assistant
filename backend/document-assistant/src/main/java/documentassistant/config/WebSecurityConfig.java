@@ -60,7 +60,7 @@ public class WebSecurityConfig {
         configuration.setAllowedOrigins(List.of("http://localhost:3000"));
 
         // 4. Define allowed methods and headers
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 
         // 5. Allow credentials (cookies/auth headers)
