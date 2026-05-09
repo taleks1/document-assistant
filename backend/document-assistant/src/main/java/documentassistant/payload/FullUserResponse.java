@@ -1,8 +1,6 @@
 package documentassistant.payload;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import documentassistant.model.entity.User;
-import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,8 +19,6 @@ public class FullUserResponse {
     private String email;
     private String role;
     private boolean isActive;
-    @JsonFormat(pattern = "dd/MM/yyyy")
-    @Schema(example = "01/01/2026")
     private LocalDate dateCreated;
     private String embg;
     private String gender;
@@ -31,11 +27,8 @@ public class FullUserResponse {
     private String city;
     private String address;
     private String cardId;
-    @JsonFormat(pattern = "dd/MM/yyyy")
     private LocalDate birthDate;
-    @JsonFormat(pattern = "dd/MM/yyyy")
     private LocalDate cardIssueDate;
-    @JsonFormat(pattern = "dd/MM/yyyy")
     private LocalDate cardExpiryDate;
 
     public static FullUserResponse from(final User user) {

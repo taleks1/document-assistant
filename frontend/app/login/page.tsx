@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
@@ -11,7 +12,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { FileText, Loader2, AlertCircle, ArrowLeft } from "lucide-react"
 
 export default function LoginPage() {
-  const { login, isLoading } = useAuth()
+  const { user, login, isLoading } = useAuth()
+  const router = useRouter()
+  
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push(user.role === "admin" ? "/admin" : "/citizen")
+    }
+  }, [user, isLoading, router])
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -106,8 +115,8 @@ export default function LoginPage() {
             <div className="rounded-lg bg-muted p-4 text-sm">
               <p className="mb-2 font-medium text-foreground">Test Credentials: </p>
               <div className="space-y-1 text-muted-foreground">
-                <p><span className="font-medium">citizen:</span> citizen@example.com / c</p>
-                <p><span className="font-medium">admin:</span> admin@gov.com / a</p>
+                <p><span className="font-medium">citizen:</span> johndoe@gmail.com / johndoe123</p>
+                <p><span className="font-medium">admin:</span> admin@gov.com / admin123</p>
               </div>
             </div>
 

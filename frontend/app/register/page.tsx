@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
@@ -11,8 +12,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { FileText, Loader2, AlertCircle, ArrowLeft, CheckCircle } from "lucide-react"
 
 export default function RegisterPage() {
-  const { register, isLoading } = useAuth()
-  const [name, setName] = useState("")
+  const { user, register, isLoading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push(user.role === "admin" ? "/admin" : "/citizen")
+    }
+  }, [user, isLoading, router])
+
+  const [firstname, setFirstname] = useState("")
+  const [lastname, setLastname] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -22,7 +32,7 @@ export default function RegisterPage() {
     e.preventDefault()
     setError("")
 
-    if (!name || !email || !password || !confirmPassword) {
+    if (!firstname || !lastname || !email || !password || !confirmPassword) {
       setError("Ве молиме пополнете ги сите полиња")
       return
     }
@@ -38,7 +48,7 @@ export default function RegisterPage() {
     }
 
     try {
-      await register(name, email, password)
+      await register(firstname, lastname, email, password)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Регистрацијата не успеа")
     }
@@ -69,16 +79,29 @@ export default function RegisterPage() {
               </Alert>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="name">Име и презиме</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Име Презиме"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={isLoading}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="firstname">Име</Label>
+                <Input
+                  id="firstname"
+                  type="text"
+                  placeholder="Иван"
+                  value={firstname}
+                  onChange={(e) => setFirstname(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastname">Презиме</Label>
+                <Input
+                  id="lastname"
+                  type="text"
+                  placeholder="Петровски"
+                  value={lastname}
+                  onChange={(e) => setLastname(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
