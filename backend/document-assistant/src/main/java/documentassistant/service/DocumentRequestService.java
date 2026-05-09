@@ -1,6 +1,7 @@
 package documentassistant.service;
 
 import documentassistant.exception.InvalidRequestStateException;
+import documentassistant.exception.NoDocumentRequestsFoundException;
 import documentassistant.exception.ResourceNotFoundException;
 import documentassistant.model.entity.DocumentRequest;
 import documentassistant.model.enums.DocumentRequestStatus;
@@ -14,7 +15,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -71,5 +71,19 @@ public class DocumentRequestService {
         DocumentRequest updated = repository.save(documentRequest);
 
         return DocumentRequestResponse.from(updated);
+    }
+
+    @Transactional
+    public Page<DocumentRequest> getRequestsByUserId(Integer userId, Pageable pageable) {
+
+        userService.getUserById(userId);
+
+        Page<DocumentRequest> requests = repository.findByUserId(userId, pageable);
+
+        if (requests.isEmpty()) {
+            throw new NoDocumentRequestsFoundException("No requests for the selected user found");
+        }
+
+        return requests;
     }
 }
