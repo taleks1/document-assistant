@@ -48,6 +48,7 @@ import {
   MessageSquare,
   Eye,
   Loader2,
+  ChevronDown,
 } from "lucide-react"
 
 const STORAGE_KEY = "admin-requests"
@@ -203,53 +204,54 @@ export default function AdminRequestDetailPage() {
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground">{requestData.id}</h1>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="rounded-md outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
+            <div className="flex items-center justify-between gap-6">
+              <h1 className="text-2xl font-bold text-foreground">
+                {requestData.id}
+              </h1>
+
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">
+                  Статус:
+                </span>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center justify-between gap-2 min-w-[150px] rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-700 shadow-sm transition hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    >
+                      <span className="w-full flex items-center justify-between gap-2">
+                        {statusLabels[requestData.status]}
+                        <ChevronDown className="h-3 w-3 text-gray-500" />
+                      </span>
+
+                    </button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-[150px] rounded-lg border border-gray-200 bg-white shadow-md"
                   >
-                    <StatusBadge status={requestData.status} />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => handleStatusChange("sent")}>
-                    {statusLabels.sent}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleStatusChange("processing")}>
-                    {statusLabels.processing}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleStatusChange("reviewed")}>
-                    {statusLabels.reviewed}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleStatusChange("approved")}>
-                    {statusLabels.approved}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleStatusChange("rejected")}>
-                    {statusLabels.rejected}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    {Object.entries(statusLabels).map(([key, label]) => (
+                      <DropdownMenuItem
+                        key={key}
+                        onClick={() => handleStatusChange(key as any)}
+                        className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        {label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
             <p className="mt-1 text-muted-foreground">{requestData.title}</p>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => {
-                infoForm.reset()
-                setShowInfoDialog(true)
-              }}
-            >
-              <MessageSquare className="h-4 w-4" />
-              Побарај информации
-            </Button>
+
 
             <Button
               variant="outline"
@@ -541,14 +543,12 @@ export default function AdminRequestDetailPage() {
                   <div key={index} className="flex gap-3">
                     <div className="flex flex-col items-center">
                       <div
-                        className={`flex h-6 w-6 items-center justify-center rounded-full ${
-                          index === 0 ? "bg-primary" : "bg-muted"
-                        }`}
+                        className={`flex h-6 w-6 items-center justify-center rounded-full ${index === 0 ? "bg-primary" : "bg-muted"
+                          }`}
                       >
                         <div
-                          className={`h-2 w-2 rounded-full ${
-                            index === 0 ? "bg-primary-foreground" : "bg-muted-foreground"
-                          }`}
+                          className={`h-2 w-2 rounded-full ${index === 0 ? "bg-primary-foreground" : "bg-muted-foreground"
+                            }`}
                         />
                       </div>
                       {index < requestData.statusHistory.length - 1 && (
@@ -625,22 +625,6 @@ export default function AdminRequestDetailPage() {
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border">
-            <CardHeader>
-              <CardTitle>Брзи акции</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start gap-2">
-                <Download className="h-4 w-4" />
-                Експортирај барање
-              </Button>
-              <Button variant="outline" className="w-full justify-start gap-2">
-                <FileText className="h-4 w-4" />
-                Испечати преглед
-              </Button>
             </CardContent>
           </Card>
         </div>

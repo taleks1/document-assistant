@@ -11,8 +11,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { User, Save, CheckCircle, Loader2, Mail, Phone, MapPin, Hash, Shield, Calendar, Globe, FileText } from "lucide-react"
+import {
+  User,
+  Save,
+  CheckCircle,
+  Loader2,
+  Mail,
+  Phone,
+  MapPin,
+  Hash,
+  Shield,
+  Calendar,
+  Globe,
+  FileText,
+  Upload,
+  Scan
+} from "lucide-react"
 import { Separator } from "@/components/ui/separator"
+import { useRouter } from "next/navigation"
 
 const profileSchema = z.object({
   firstname: z.string().trim().min(2, "Името мора да има најмалку 2 карактери"),
@@ -33,6 +49,7 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>
 
 export default function ProfilePage() {
+  const router = useRouter()
   const { user, logout } = useAuth()
 
   const [isEditing, setIsEditing] = useState(false)
@@ -121,27 +138,45 @@ export default function ProfilePage() {
           {/* Main profile section */}
           <div className="lg:col-span-2 space-y-8">
             <Card className="border-none bg-transparent shadow-none">
-              <CardHeader className="flex flex-row items-center justify-between px-0 pt-0">
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between px-0 pt-0 gap-4">
                 <div>
                   <CardTitle className="text-xl">Лични информации</CardTitle>
                   <CardDescription>Основни податоци за вашиот идентитет</CardDescription>
                 </div>
 
-                {!isEditing ? (
-                  <Button type="button" variant="outline" onClick={() => setIsEditing(true)}>
-                    Измени
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2 rounded-xl"
+                    onClick={() => router.push("/citizen/profile/scan-id")}
+                  >
+                    <Upload className="h-4 w-4" />
+                    Личен документ
                   </Button>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={handleCancel}>
-                      Откажи
+
+                  {!isEditing ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-xl"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      Измени
                     </Button>
-                    <Button type="submit" disabled={isSaving} className="gap-2">
-                      {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                      Зачувај
-                    </Button>
-                  </div>
-                )}
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" className="rounded-xl" onClick={handleCancel}>
+                        Откажи
+                      </Button>
+
+                      <Button type="submit" disabled={isSaving} className="gap-2 rounded-xl">
+                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        Зачувај
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
 
               <CardContent className="px-0 space-y-6">
@@ -199,7 +234,7 @@ export default function ProfilePage() {
                     <Label htmlFor="birthDate" className="text-xs text-muted-foreground uppercase font-bold">Датум на раѓање</Label>
                     <div className="relative">
                       <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="birthDate" disabled={!isEditing} {...form.register("birthDate")} className="pl-10 bg-background/50" />
+                      <Input id="birthDate" disabled={!isEditing} type="date" {...form.register("birthDate")} className="pl-10 bg-background/50" />
                     </div>
                   </div>
 
@@ -249,12 +284,12 @@ export default function ProfilePage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="cardIssueDate" className="text-xs text-muted-foreground uppercase font-bold">Датум на издавање</Label>
-                    <Input id="cardIssueDate" disabled={!isEditing} {...form.register("cardIssueDate")} className="bg-background/50" />
+                    <Input id="cardIssueDate" disabled={!isEditing} type="date" {...form.register("cardIssueDate")} className="bg-background/50" />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="cardExpiryDate" className="text-xs text-muted-foreground uppercase font-bold">Датум на истекување</Label>
-                    <Input id="cardExpiryDate" disabled={!isEditing} {...form.register("cardExpiryDate")} className="bg-background/50" />
+                    <Input id="cardExpiryDate" disabled={!isEditing} type="date" {...form.register("cardExpiryDate")} className="bg-background/50" />
                   </div>
                 </div>
               </CardContent>
