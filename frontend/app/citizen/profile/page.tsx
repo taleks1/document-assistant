@@ -74,6 +74,12 @@ export default function ProfilePage() {
       cardExpiryDate: user?.cardExpiryDate || "",
     },
   })
+  useEffect(() => {
+    const data = localStorage.getItem("profileData")
+    if (data) {
+      form.reset(JSON.parse(data))
+    }
+  }, [])
 
   // Update form when user data changes
   useEffect(() => {
