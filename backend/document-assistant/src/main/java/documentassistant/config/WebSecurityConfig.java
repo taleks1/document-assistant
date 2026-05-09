@@ -34,6 +34,7 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",
+                                "/api/ocr/**",
                                 "/h2-console/**",
                                 "/",
                                 "/error",

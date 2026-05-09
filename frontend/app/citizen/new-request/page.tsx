@@ -19,7 +19,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Upload, FileText, Loader2, CheckCircle, X, Brain, AlertCircle } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Upload, FileText, Loader2, CheckCircle, X, Brain, AlertCircle, CalendarIcon } from "lucide-react"
+import { format, parse, isValid } from "date-fns"
 import { useAuth } from "@/lib/auth-context"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
@@ -41,9 +44,9 @@ const newRequestSchema = z.object({
   lastName: z.string().trim().min(2, "Презимето мора да има најмалку 2 карактери."),
   idNumber: z.string().trim().min(3, "Внеси валиден број на личен документ."),
   address: z.string().trim().min(5, "Адресата мора да има најмалку 5 карактери."),
-  dateOfBirth: z.string().min(1, "Датумот на раѓање е задолжителен."),
+  dateOfBirth: z.string().regex(/^\d{2}\.\d{2}\.\d{4}$/, "Внеси датум во формат ДД.ММ.ГГГГ (пр. 18.08.1979)."),
   embg: z.string().trim().regex(/^\d{13}$/, "ЕМБГ мора да содржи точно 13 цифри."),
-  documentExpiryDate: z.string().min(1, "Важноста на документот е задолжителна."),
+  documentExpiryDate: z.string().regex(/^\d{2}\.\d{2}\.\d{4}$/, "Внеси датум во формат ДД.ММ.ГГГГ (пр. 19.06.2025)."),
   requestType: z.string().min(1, "Избери тип на барање."),
   requestTitle: z.string().trim().min(3, "Насловот мора да има најмалку 3 карактери."),
   description: z.string().trim().min(10, "Описот мора да има најмалку 10 карактери."),
@@ -52,12 +55,37 @@ const newRequestSchema = z.object({
 
 type NewRequestFormValues = z.infer<typeof newRequestSchema>
 
-function dotDateToIso(dot: string): string {
-  if (!dot || !dot.includes(".")) return dot ?? ""
-  const [dd, mm, yyyy] = dot.split(".")
-  return `${yyyy}-${mm}-${dd}`
-}
+function DatePickerField({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const parsed = value ? parse(value, "dd.MM.yyyy", new Date()) : undefined
+  const selected = parsed && isValid(parsed) ? parsed : undefined
 
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 flex h-9 w-full items-center rounded-md border bg-transparent px-3 py-1 text-left text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:ring-[3px]"
+        >
+          <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+          {value || ""}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={selected}
+          onSelect={(date) => {
+            if (date) {
+              onChange(format(date, "dd.MM.yyyy"))
+              setOpen(false)
+            }
+          }}
+        />
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 export default function NewRequestPage() {
   const router = useRouter()
@@ -143,9 +171,9 @@ export default function NewRequestPage() {
         lastName: fields.surname ?? "",
         idNumber: fields.idNumber ?? "",
         address: "",
-        dateOfBirth: dotDateToIso(fields.birthDate ?? ""),
+        dateOfBirth: fields.birthDate ?? "",
         embg: String(fields.embg ?? ""),
-        documentExpiryDate: dotDateToIso(fields.expiryDate ?? ""),
+        documentExpiryDate: fields.expiryDate ?? "",
         requestType: "request",
         requestTitle: "",
         description: "",
@@ -465,10 +493,14 @@ export default function NewRequestPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="dateOfBirth">
-                  Датум на раѓање <span className="text-red-500">*</span>
-                </Label>
-                <Input id="dateOfBirth" type="date" {...form.register("dateOfBirth")} />
+                <Label>Датум на раѓање <span className="text-red-500">*</span></Label>
+                <Controller
+                  control={form.control}
+                  name="dateOfBirth"
+                  render={({ field }) => (
+                    <DatePickerField value={field.value} onChange={field.onChange} />
+                  )}
+                />
                 {form.formState.errors.dateOfBirth && (
                   <p className="text-sm text-destructive">
                     {form.formState.errors.dateOfBirth.message}
@@ -487,13 +519,13 @@ export default function NewRequestPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="documentExpiryDate">
-                  Важност на документот <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="documentExpiryDate"
-                  type="date"
-                  {...form.register("documentExpiryDate")}
+                <Label>Важност на документот <span className="text-red-500">*</span></Label>
+                <Controller
+                  control={form.control}
+                  name="documentExpiryDate"
+                  render={({ field }) => (
+                    <DatePickerField value={field.value} onChange={field.onChange} />
+                  )}
                 />
                 {form.formState.errors.documentExpiryDate && (
                   <p className="text-sm text-destructive">
