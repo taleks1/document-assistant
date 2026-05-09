@@ -1,10 +1,6 @@
 package documentassistant.web.handler;
 
-import documentassistant.exception.EmailAlreadyExistsException;
-import documentassistant.exception.InvalidRequestStateException;
-import documentassistant.exception.MissingRejectionReasonException;
-import documentassistant.exception.UserNotFoundException;
-import documentassistant.exception.ResourceNotFoundException;
+import documentassistant.exception.*;
 import documentassistant.payload.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -98,5 +94,18 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .build();
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(NoDocumentRequestsFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoDocumentRequestsFoundException(
+            NoDocumentRequestsFoundException ex
+    ) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .status(HttpStatus.NOT_FOUND.value())
+                .message(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 }
