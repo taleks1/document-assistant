@@ -25,9 +25,10 @@ public class ParserService {
         String prompt = "You have raw text from a Macedonian ID card. Extract the fields into valid JSON using English keys only: " +
                 "name, surname, idNumber (the number under the photo - ALWAYS ONE LETTER + 7 DIGITS), " +
                 "embg (personal identification number - return as a STRING), " +
-                "birthDate, issueDate, expiryDate, nationality, gender. " +
+                "birthDate, issueDate, expiryDate, nationality, gender, address. " +
                 "Use the English text from the card if available. If the values are in Macedonian, translate them into English. " +
                 "IMPORTANT: Return ALL dates strictly in DD.MM.YYYY format (e.g. 18.03.1997). Copy dates exactly as they appear in the raw text - do not reorder or reformat them. " +
+                "If a field cannot be found in the document, set its value to null. Do NOT use placeholder text like 'N/A', 'not found', 'не е наведено' or similar. " +
                 "Then return a second JSON object with the same field values translated into Macedonian. " +
                 "Return only valid JSON in the following structure:\n" +
                 "{\n  \"fields_en\": { ... },\n  \"fields_mk\": { ... }\n}\n\n" +

@@ -91,7 +91,7 @@ export default function NewRequestPage() {
   const [step, setStep] = useState<"upload" | "form" | "preview">("upload")
   const [isExtracting, setIsExtracting] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([])
   const [ocrUsed, setOcrUsed] = useState(false)
   const [ocrError, setOcrError] = useState<string | null>(null)
@@ -118,30 +118,35 @@ export default function NewRequestPage() {
 
   const handleFileDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
-    const file = e.dataTransfer.files[0]
-    if (file && (file.type.includes("image") || file.type === "application/pdf")) {
-      setUploadedFile(file)
+    const dropped = Array.from(e.dataTransfer.files).filter(
+      (f) => f.type.includes("image") || f.type === "application/pdf"
+    )
+    if (dropped.length > 0) {
+      setUploadedFiles((prev) => [...prev, ...dropped])
       setOcrError(null)
     }
   }, [])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setUploadedFile(file)
+    const selected = Array.from(e.target.files || [])
+    if (selected.length > 0) {
+      setUploadedFiles((prev) => [...prev, ...selected])
       setOcrError(null)
+      e.target.value = ""
     }
   }, [])
 
   const handleExtract = async () => {
-    if (!uploadedFile) return
+    if (uploadedFiles.length === 0) return
 
     setIsExtracting(true)
     setOcrError(null)
 
     try {
-      const data = await apiOcrUpload(uploadedFile)
-      const fields = data?.parsed?.fields_en ?? {}
+      const data = await apiOcrUpload(uploadedFiles)
+      const fields_en = data?.parsed?.fields_en ?? {}
+      const fields_mk = data?.parsed?.fields_mk ?? {}
+      const fields = { ...fields_en, ...fields_mk }
       const hasData = !!(fields.name || fields.surname || fields.idNumber || fields.embg)
 
       if (!hasData) {
@@ -153,7 +158,7 @@ export default function NewRequestPage() {
         firstName: fields.name ?? "",
         lastName: fields.surname ?? "",
         idNumber: fields.idNumber ?? "",
-        address: "",
+        address: fields.address ?? "",
         dateOfBirth: fields.birthDate ?? "",
         embg: String(fields.embg ?? ""),
         documentExpiryDate: fields.expiryDate ?? "",
@@ -306,59 +311,60 @@ export default function NewRequestPage() {
               <div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleFileDrop}
-                className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors ${
-                  uploadedFile
-                    ? "border-green-600 bg-green-50"
-                    : "border-border hover:border-primary/50 hover:bg-muted/50"
-                }`}
+                className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-colors hover:border-primary/50 hover:bg-muted/50"
               >
-                {uploadedFile ? (
-                  <>
-                    <CheckCircle className="mb-4 h-12 w-12 text-green-600" />
-                    <p className="mb-2 font-medium text-foreground">{uploadedFile.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-4"
-                      onClick={() => { setUploadedFile(null); setOcrError(null) }}
-                    >
-                      Отстрани и прикачи друг документ
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mb-4 h-12 w-12 text-muted-foreground" />
-                    <p className="mb-2 font-medium text-foreground">
-                      Повлечете и пуштете го вашиот документ
-                    </p>
-                    <p className="mb-4 text-sm text-muted-foreground">
-                      или кликнете за избор на датотека
-                    </p>
-
-                    <label htmlFor="file-upload">
-                      <Button type="button" variant="outline" asChild>
-                        <span>Избери датотека</span>
-                      </Button>
-                      <input
-                        id="file-upload"
-                        type="file"
-                        accept="image/*,.pdf"
-                        className="hidden"
-                        onChange={handleFileSelect}
-                      />
-                    </label>
-
-                    <p className="mt-4 text-xs text-muted-foreground">
-                      Поддржани формати: JPG, PNG, PDF (макс. 10MB)
-                    </p>
-                  </>
-                )}
+                <Upload className="mb-4 h-12 w-12 text-muted-foreground" />
+                <p className="mb-2 font-medium text-foreground">
+                  Повлечете и пуштете документи овде
+                </p>
+                <label htmlFor="file-upload">
+                  <Button type="button" variant="outline" asChild>
+                    <span>Избери датотеки</span>
+                  </Button>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept="image/*,.pdf"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                </label>
+                <p className="mt-4 text-xs text-muted-foreground">
+                  Поддржани формати: JPG, PNG, PDF (макс. 10MB)
+                </p>
               </div>
+
+              {uploadedFiles.length > 0 && (
+                <div className="space-y-2">
+                  {uploadedFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-2"
+                    >
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="h-4 w-4 shrink-0 text-green-600" />
+                        <span className="text-sm font-medium">{file.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => {
+                          setUploadedFiles((prev) => prev.filter((_, i) => i !== index))
+                          setOcrError(null)
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {ocrError && (
                 <Alert variant="destructive">
@@ -368,7 +374,7 @@ export default function NewRequestPage() {
               )}
 
               <div className="flex flex-col gap-2">
-                {uploadedFile && (
+                {uploadedFiles.length > 0 && (
                   <Button
                     type="button"
                     className="w-full gap-2"

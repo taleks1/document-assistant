@@ -23,7 +23,6 @@ import {
   Shield,
   Calendar,
   Globe,
-  FileText,
   Upload,
   Scan
 } from "lucide-react"
@@ -336,18 +335,6 @@ export default function ProfilePage() {
                 >
                   <Shield className="h-4 w-4" />
                   Промени лозинка
-                </Button>
-
-                <Separator />
-
-
-                <Button type="button" variant="outline" className="w-full justify-start rounded-xl bg-background hover:bg-muted transition-all">
-                  <FileText className="mr-2 h-4 w-4" />
-                  Преземи ги моите податоци
-                </Button>
-                <Button type="button" variant="outline" className="w-full justify-start rounded-xl bg-background hover:bg-muted transition-all">
-                  <Shield className="mr-2 h-4 w-4" />
-                  Побарај бришење на сметка
                 </Button>
 
                 <Separator className="my-2" />
