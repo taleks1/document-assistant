@@ -23,9 +23,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Upload, FileText, Loader2, CheckCircle, X, Brain, AlertCircle, CalendarIcon } from "lucide-react"
 import { format, parse, isValid } from "date-fns"
-import { useAuth } from "@/lib/auth-context"
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
+import { apiOcrUpload, apiCreateRequest, apiUploadRequestFiles } from "@/lib/api"
 
 const requestTypeLabels: Record<string, string> = {
   request: "Барање",
@@ -89,7 +87,6 @@ function DatePickerField({ value, onChange }: { value: string; onChange: (val: s
 
 export default function NewRequestPage() {
   const router = useRouter()
-  const { token } = useAuth()
 
   const [step, setStep] = useState<"upload" | "form" | "preview">("upload")
   const [isExtracting, setIsExtracting] = useState(false)
@@ -143,21 +140,7 @@ export default function NewRequestPage() {
     setOcrError(null)
 
     try {
-      const formData = new FormData()
-      formData.append("file", uploadedFile)
-
-      const res = await fetch(`${API_BASE}/api/ocr/upload`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      })
-
-      if (!res.ok) {
-        setOcrError("Неуспешно извлекување на податоци. Обидете се повторно или прескокнете.")
-        return
-      }
-
-      const data = await res.json()
+      const data = await apiOcrUpload(uploadedFile)
       const fields = data?.parsed?.fields_en ?? {}
       const hasData = !!(fields.name || fields.surname || fields.idNumber || fields.embg)
 
@@ -201,37 +184,15 @@ export default function NewRequestPage() {
     setSubmitError(null)
 
     try {
-      const res = await fetch(`${API_BASE}/api/requests`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          type: submittedData.requestType.toUpperCase(),
-          title: submittedData.requestTitle,
-          description: submittedData.description,
-          notes: submittedData.notes || null,
-        }),
+      const created = await apiCreateRequest({
+        type: submittedData.requestType.toUpperCase(),
+        title: submittedData.requestTitle,
+        description: submittedData.description,
+        notes: submittedData.notes || null,
       })
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.message ?? "Неуспешно поднесување на барањето.")
-      }
-
-      const created = await res.json()
-      const requestId: number = created.id
-
       if (additionalFiles.length > 0) {
-        const fileForm = new FormData()
-        additionalFiles.forEach((f) => fileForm.append("files", f))
-
-        await fetch(`${API_BASE}/api/requests/${requestId}/files`, {
-          method: "POST",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          body: fileForm,
-        })
+        await apiUploadRequestFiles(created.id, additionalFiles)
       }
 
       router.push("/citizen/requests")
