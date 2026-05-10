@@ -21,6 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+
 @Service
 @RequiredArgsConstructor
 public class RequestFileService {
@@ -80,6 +83,28 @@ public class RequestFileService {
         return fileRepository.findAllByDocumentRequest_Id(requestId).stream()
                 .map(RequestFileResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public RequestFile getFile(Long requestId, Long fileId) {
+        requestRepository.findByIdAndUser(requestId, userService.getCurrentUser())
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
+
+        return fileRepository.findByIdAndDocumentRequest_Id(fileId, requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("File not found"));
+    }
+
+    public Resource loadAsResource(RequestFile file) {
+        try {
+            Path filePath = Paths.get(uploadDir).toAbsolutePath().normalize().resolve(file.getStoredFileName());
+            Resource resource = new UrlResource(filePath.toUri());
+            if (!resource.exists() || !resource.isReadable()) {
+                throw new ResourceNotFoundException("File not found on disk");
+            }
+            return resource;
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("File not found: " + e.getMessage());
+        }
     }
 
     private String getExtension(String filename) {
