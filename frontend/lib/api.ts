@@ -45,7 +45,16 @@ async function handleResponse<T>(res: Response): Promise<T> {
     }
     throw new Error(message)
   }
-  return res.json() as Promise<T>
+  
+  if (res.status === 204 || res.headers.get("content-length") === "0") {
+    return {} as T
+  }
+
+  try {
+    return await res.json() as T
+  } catch {
+    return {} as T
+  }
 }
 
 function authHeaders(): HeadersInit {
@@ -92,6 +101,36 @@ export async function apiGetCurrentUser(): Promise<User> {
     headers: authHeaders(),
   })
   return handleResponse<User>(res)
+}
+
+export async function apiUpdateUser(data: Partial<User>): Promise<User> {
+  const res = await fetch(`${BASE_URL}/api/users/me`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  })
+  return handleResponse<User>(res)
+}
+
+export async function apiChangeEmail(email: string): Promise<AuthResponse> {
+  const res = await fetch(`${BASE_URL}/api/users/change-email`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ email }),
+  })
+  return handleResponse<AuthResponse>(res)
+}
+
+export async function apiChangePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/users/change-password`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ currentPassword, newPassword }),
+  })
+  return handleResponse<void>(res)
 }
 
 // ─── Admin user list ──────────────────────────────────────────────────────────
