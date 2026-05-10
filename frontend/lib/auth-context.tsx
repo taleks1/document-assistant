@@ -49,6 +49,8 @@ interface AuthContextType {
     password: string
   ) => Promise<void>
   logout: () => void
+  refreshUser: () => Promise<void>
+  updateSession: (token: string, role: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -199,6 +201,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [router]
   )
 
+  // ── refreshUser ─────────────────────────────────────────────────────────────
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const u = await apiGetCurrentUser()
+      setUser({
+        id: String(u.id),
+        email: u.email,
+        name: `${u.firstname} ${u.lastname}`,
+        firstname: u.firstname,
+        lastname: u.lastname,
+        role: normaliseRole(u.role),
+        embg: u.embg,
+        gender: u.gender,
+        nationality: u.nationality,
+        phone: u.phone,
+        city: u.city,
+        address: u.address,
+        cardId: u.cardId,
+        birthDate: u.birthDate,
+        cardIssueDate: u.cardIssueDate,
+        cardExpiryDate: u.cardExpiryDate,
+        active: u.active,
+      })
+    } catch (err) {
+      console.error("Failed to refresh user:", err)
+    }
+  }, [])
+
+  // ── updateSession ───────────────────────────────────────────────────────────
+
+  const updateSession = useCallback(
+    async (token: string, role: string) => {
+      saveToken(token)
+      await refreshUser()
+    },
+    [refreshUser]
+  )
+
   // ── logout ─────────────────────────────────────────────────────────────────
 
   const logout = useCallback(() => {
@@ -208,7 +249,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router])
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        login,
+        register,
+        logout,
+        refreshUser,
+        updateSession,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

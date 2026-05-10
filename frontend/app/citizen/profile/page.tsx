@@ -30,10 +30,14 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { useRouter } from "next/navigation"
 
+import {
+  apiUpdateUser,
+  User as ApiUser
+} from "@/lib/api"
+
 const profileSchema = z.object({
   firstname: z.string().trim().min(2, "Името мора да има најмалку 2 карактери"),
   lastname: z.string().trim().min(2, "Презимето мора да има најмалку 2 карактери"),
-  email: z.string().trim().email("Внесете валидна е-пошта"),
   phone: z.string().trim().optional(),
   address: z.string().trim().optional(),
   city: z.string().trim().optional(),
@@ -50,18 +54,17 @@ type ProfileFormValues = z.infer<typeof profileSchema>
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user, logout } = useAuth()
+  const { user, logout, refreshUser, updateSession } = useAuth()
 
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
 
-  const form = useForm<ProfileFormValues>({
+  const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       firstname: user?.firstname || "",
       lastname: user?.lastname || "",
-      email: user?.email || "",
       phone: user?.phone || "",
       address: user?.address || "",
       city: user?.city || "",
@@ -74,20 +77,13 @@ export default function ProfilePage() {
       cardExpiryDate: user?.cardExpiryDate || "",
     },
   })
-  useEffect(() => {
-    const data = localStorage.getItem("profileData")
-    if (data) {
-      form.reset(JSON.parse(data))
-    }
-  }, [])
 
   // Update form when user data changes
   useEffect(() => {
     if (user) {
-      form.reset({
+      profileForm.reset({
         firstname: user.firstname || "",
         lastname: user.lastname || "",
-        email: user.email || "",
         phone: user.phone || "",
         address: user.address || "",
         city: user.city || "",
@@ -100,20 +96,29 @@ export default function ProfilePage() {
         cardExpiryDate: user.cardExpiryDate || "",
       })
     }
-  }, [user, form])
+  }, [user, profileForm])
 
-  const onSubmit = async (values: ProfileFormValues) => {
+  const onProfileSubmit = async (values: ProfileFormValues) => {
     setIsSaving(true)
-    // In a real app, this would be an API call to update the user profile
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsSaving(false)
-    setIsEditing(false)
-    setShowSuccess(true)
-    setTimeout(() => setShowSuccess(false), 3000)
+    try {
+      await apiUpdateUser(values as Partial<ApiUser>)
+      await refreshUser()
+      setIsEditing(false)
+      showStatus("success", "Профилот е успешно ажуриран.")
+    } catch (err: any) {
+      showStatus("error", err.message || "Грешка при ажурирање на профилот.")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const showStatus = (type: "success" | "error", message: string) => {
+    setStatus({ type, message })
+    setTimeout(() => setStatus(null), 5000)
   }
 
   const handleCancel = () => {
-    form.reset()
+    profileForm.reset()
     setIsEditing(false)
   }
 
@@ -130,19 +135,19 @@ export default function ProfilePage() {
 
       <Separator className="mb-8" />
 
-      {showSuccess && (
-        <Alert className="mb-6 border-success/20 bg-success/10">
-          <CheckCircle className="h-4 w-4 text-success" />
-          <AlertDescription className="text-success">
-            Вашиот профил е успешно ажуриран.
+      {status && (
+        <Alert className={`mb-6 ${status.type === "success" ? "border-success/20 bg-success/10 text-success" : "border-destructive/20 bg-destructive/10 text-destructive"}`}>
+          {status.type === "success" ? <CheckCircle className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
+          <AlertDescription>
+            {status.message}
           </AlertDescription>
         </Alert>
       )}
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Main profile section */}
-          <div className="lg:col-span-2 space-y-8">
+      <div className="grid gap-8 lg:grid-cols-3">
+        {/* Main profile section */}
+        <div className="lg:col-span-2 space-y-8">
+          <form onSubmit={profileForm.handleSubmit(onProfileSubmit)}>
             <Card className="border-none bg-transparent shadow-none">
               <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between px-0 pt-0 gap-4">
                 <div>
@@ -199,19 +204,21 @@ export default function ProfilePage() {
                 <div className="grid gap-6 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="firstname" className="text-xs text-muted-foreground uppercase font-bold">Име</Label>
-                    <Input id="firstname" disabled={!isEditing} {...form.register("firstname")} className="bg-background/50" />
+                    <Input id="firstname" readOnly={!isEditing} {...profileForm.register("firstname")} className={`bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
+                    {profileForm.formState.errors.firstname && <p className="text-xs text-destructive">{profileForm.formState.errors.firstname.message}</p>}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="lastname" className="text-xs text-muted-foreground uppercase font-bold">Презиме</Label>
-                    <Input id="lastname" disabled={!isEditing} {...form.register("lastname")} className="bg-background/50" />
+                    <Input id="lastname" readOnly={!isEditing} {...profileForm.register("lastname")} className={`bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
+                    {profileForm.formState.errors.lastname && <p className="text-xs text-destructive">{profileForm.formState.errors.lastname.message}</p>}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-xs text-muted-foreground uppercase font-bold">Е-пошта</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="email" type="email" disabled={!isEditing} {...form.register("email")} className="pl-10 bg-background/50" />
+                      <Input id="email" type="email" readOnly value={user.email} className="pl-10 bg-muted/50 opacity-70 cursor-default focus-visible:ring-0" />
                     </div>
                   </div>
 
@@ -219,7 +226,7 @@ export default function ProfilePage() {
                     <Label htmlFor="phone" className="text-xs text-muted-foreground uppercase font-bold">Телефон</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="phone" disabled={!isEditing} {...form.register("phone")} className="pl-10 bg-background/50" />
+                      <Input id="phone" readOnly={!isEditing} {...profileForm.register("phone")} className={`pl-10 bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
                     </div>
                   </div>
                 </div>
@@ -232,7 +239,7 @@ export default function ProfilePage() {
                     <Label htmlFor="embg" className="text-xs text-muted-foreground uppercase font-bold">ЕМБГ</Label>
                     <div className="relative">
                       <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="embg" disabled={!isEditing} {...form.register("embg")} className="pl-10 bg-background/50" />
+                      <Input id="embg" readOnly={!isEditing} {...profileForm.register("embg")} className={`pl-10 bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
                     </div>
                   </div>
 
@@ -240,20 +247,20 @@ export default function ProfilePage() {
                     <Label htmlFor="birthDate" className="text-xs text-muted-foreground uppercase font-bold">Датум на раѓање</Label>
                     <div className="relative">
                       <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="birthDate" disabled={!isEditing} type="date" {...form.register("birthDate")} className="pl-10 bg-background/50" />
+                      <Input id="birthDate" readOnly={!isEditing} type="date" {...profileForm.register("birthDate")} className={`pl-10 bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="gender" className="text-xs text-muted-foreground uppercase font-bold">Пол</Label>
-                    <Input id="gender" disabled={!isEditing} {...form.register("gender")} className="bg-background/50" />
+                    <Input id="gender" readOnly={!isEditing} {...profileForm.register("gender")} className={`bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="nationality" className="text-xs text-muted-foreground uppercase font-bold">Државјанство</Label>
                     <div className="relative">
                       <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="nationality" disabled={!isEditing} {...form.register("nationality")} className="pl-10 bg-background/50" />
+                      <Input id="nationality" readOnly={!isEditing} {...profileForm.register("nationality")} className={`pl-10 bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
                     </div>
                   </div>
                 </div>
@@ -264,14 +271,14 @@ export default function ProfilePage() {
                 <div className="grid gap-6 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="city" className="text-xs text-muted-foreground uppercase font-bold">Град</Label>
-                    <Input id="city" disabled={!isEditing} {...form.register("city")} className="bg-background/50" />
+                    <Input id="city" readOnly={!isEditing} {...profileForm.register("city")} className={`bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="address" className="text-xs text-muted-foreground uppercase font-bold">Адреса</Label>
                     <div className="relative">
                       <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="address" disabled={!isEditing} {...form.register("address")} className="pl-10 bg-background/50" />
+                      <Input id="address" readOnly={!isEditing} {...profileForm.register("address")} className={`pl-10 bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
                     </div>
                   </div>
                 </div>
@@ -284,43 +291,66 @@ export default function ProfilePage() {
                     <Label htmlFor="cardId" className="text-xs text-muted-foreground uppercase font-bold">Број на лична карта</Label>
                     <div className="relative">
                       <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="cardId" disabled={!isEditing} {...form.register("cardId")} className="pl-10 bg-background/50" />
+                      <Input id="cardId" readOnly={!isEditing} {...profileForm.register("cardId")} className={`pl-10 bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="cardIssueDate" className="text-xs text-muted-foreground uppercase font-bold">Датум на издавање</Label>
-                    <Input id="cardIssueDate" disabled={!isEditing} type="date" {...form.register("cardIssueDate")} className="bg-background/50" />
+                    <Input id="cardIssueDate" readOnly={!isEditing} type="date" {...profileForm.register("cardIssueDate")} className={`bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="cardExpiryDate" className="text-xs text-muted-foreground uppercase font-bold">Датум на истекување</Label>
-                    <Input id="cardExpiryDate" disabled={!isEditing} type="date" {...form.register("cardExpiryDate")} className="bg-background/50" />
+                    <Input id="cardExpiryDate" readOnly={!isEditing} type="date" {...profileForm.register("cardExpiryDate")} className={`bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
+          </form>
+        </div>
 
-          {/* Sidebar actions */}
-          <div className="space-y-6">
-            <Card className="border border-border/50 bg-muted/30 shadow-none rounded-2xl overflow-hidden">
-              <CardHeader className="bg-muted/50 border-b border-border/50">
-                <CardTitle className="text-base">Брзи акции</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 space-y-3">
+        {/* Sidebar actions */}
+        <div className="space-y-6">
+          <Card className="border border-border/50 bg-muted/30 shadow-none rounded-2xl overflow-hidden">
+            <CardHeader className="bg-muted/50 border-b border-border/50">
+              <CardTitle className="text-base">Поставки за сметка</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3">
+              <div className="space-y-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push("/citizen/profile/change-email")}
+                  className="w-full rounded-xl gap-2 justify-start bg-background hover:bg-muted"
+                >
+                  <Mail className="h-4 w-4" />
+                  Промени е-пошта
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push("/citizen/profile/change-password")}
+                  className="w-full rounded-xl gap-2 justify-start bg-background hover:bg-muted"
+                >
+                  <Shield className="h-4 w-4" />
+                  Промени лозинка
+                </Button>
+
+                <Separator />
+
+
                 <Button type="button" variant="outline" className="w-full justify-start rounded-xl bg-background hover:bg-muted transition-all">
                   <FileText className="mr-2 h-4 w-4" />
                   Преземи ги моите податоци
                 </Button>
-
                 <Button type="button" variant="outline" className="w-full justify-start rounded-xl bg-background hover:bg-muted transition-all">
                   <Shield className="mr-2 h-4 w-4" />
                   Побарај бришење на сметка
                 </Button>
 
                 <Separator className="my-2" />
-
                 <Button
                   type="button"
                   variant="ghost"
@@ -330,21 +360,21 @@ export default function ProfilePage() {
                   <Shield className="mr-2 h-4 w-4" />
                   Одјави се
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card className="border border-primary/20 bg-primary/5 shadow-none rounded-2xl">
-              <CardContent className="p-6 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-4">
-                  <Shield className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-bold text-sm mb-1">Безбедност на податоци</h3>
-                <p className="text-xs text-muted-foreground">Вашите податоци се заштитени и се користат само за државни услуги.</p>
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="border border-primary/20 bg-primary/5 shadow-none rounded-2xl">
+            <CardContent className="p-6 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-4">
+                <Shield className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="font-bold text-sm mb-1">Безбедност на податоци</h3>
+              <p className="text-xs text-muted-foreground">Вашите податоци се заштитени и се користат само за државни услуги.</p>
+            </CardContent>
+          </Card>
         </div>
-      </form>
+      </div>
     </div>
   )
 }
