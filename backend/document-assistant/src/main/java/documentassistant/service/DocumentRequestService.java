@@ -34,6 +34,13 @@ public class DocumentRequestService {
                 .description(request.getDescription().trim())
                 .notes(request.getNotes() == null ? null : request.getNotes().trim())
                 .status(DocumentRequestStatus.SUBMITTED)
+                .statusHistory(new java.util.ArrayList<>(java.util.List.of(
+                        documentassistant.model.entity.StatusHistory.builder()
+                                .status(DocumentRequestStatus.SUBMITTED)
+                                .timestamp(java.time.Instant.now())
+                                .note("Барањето е поднесено")
+                                .build()
+                )))
                 .build();
 
         DocumentRequest saved = repository.save(documentRequest);
