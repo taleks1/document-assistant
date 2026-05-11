@@ -12,13 +12,6 @@ import {
 } from "@/lib/mock-data"
 
 import {
-  FileText,
-  TrendingUp,
-  Users,
-  Clock,
-} from "lucide-react"
-
-import {
   BarChart,
   Bar,
   XAxis,

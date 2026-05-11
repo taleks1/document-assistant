@@ -62,7 +62,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user, logout, refreshUser, updateSession } = useAuth()
+  const { user, logout, refreshUser } = useAuth()
 
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)

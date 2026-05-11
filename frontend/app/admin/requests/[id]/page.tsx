@@ -26,7 +26,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { StatusBadge } from "@/components/status-badge"
 import {
   mockRequests,
   mockDocuments,
@@ -45,7 +44,6 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  MessageSquare,
   Eye,
   Loader2,
   ChevronDown,
