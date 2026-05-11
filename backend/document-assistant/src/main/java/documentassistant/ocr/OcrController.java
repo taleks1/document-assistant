@@ -12,6 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -41,14 +43,18 @@ public class OcrController {
     }
 
     @PostMapping(value = "/upload", consumes = "multipart/form-data")
-    public ResponseEntity<Map<String, Object>> uploadAndParse(@RequestParam("file") MultipartFile file) {
-        File tempFile = null;
+    public ResponseEntity<Map<String, Object>> uploadAndParse(@RequestParam("files") List<MultipartFile> files) {
+        List<File> tempFiles = new ArrayList<>();
         try {
-            String suffix = "." + getExtension(file.getOriginalFilename());
-            tempFile = File.createTempFile("ocr_", suffix);
-            file.transferTo(tempFile);
-
-            String rawText = ocrService.extractTextFromFile(tempFile);
+            StringBuilder combined = new StringBuilder();
+            for (MultipartFile file : files) {
+                String suffix = "." + getExtension(file.getOriginalFilename());
+                File tempFile = File.createTempFile("ocr_", suffix);
+                tempFiles.add(tempFile);
+                file.transferTo(tempFile);
+                combined.append(ocrService.extractTextFromFile(tempFile)).append("\n");
+            }
+            String rawText = combined.toString().trim();
             Map<String, Object> parsedFields = parserService.parseAndTranslate(rawText);
             return ResponseEntity.ok(Map.of(
                 "rawText", rawText,
@@ -61,9 +67,7 @@ public class OcrController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         } finally {
-            if (tempFile != null) {
-                tempFile.delete();
-            }
+            tempFiles.forEach(File::delete);
         }
     }
 

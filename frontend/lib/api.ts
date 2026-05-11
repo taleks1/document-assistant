@@ -176,9 +176,9 @@ export interface OcrResponse {
   }
 }
 
-export async function apiOcrUpload(file: File): Promise<OcrResponse> {
+export async function apiOcrUpload(files: File[]): Promise<OcrResponse> {
   const formData = new FormData()
-  formData.append("file", file)
+  files.forEach((file) => formData.append("files", file))
   const token = getToken()
   const res = await fetch(`${BASE_URL}/api/ocr/upload`, {
     method: "POST",
