@@ -1,5 +1,8 @@
 package documentassistant.model.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import documentassistant.model.enums.DocumentRequestType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -29,7 +32,8 @@ public class DocumentTemplate {
     @Column(nullable = false, length = 5000)
     private String description;
 
-    @Column(nullable = false, length = 10000)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
     private String fieldsJson;
 
     @Column(nullable = false)
