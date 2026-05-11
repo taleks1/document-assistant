@@ -217,6 +217,60 @@ export async function apiCreateRequest(
   return handleResponse<DocumentRequestResponse>(res)
 }
 
+// ─── User identity document endpoints ────────────────────────────────────────
+
+export type DocumentType = "ID_CARD" | "PASSPORT" | "DRIVING_LICENSE"
+
+export interface UserIdentityDocumentResponse {
+  id: number
+  documentType: DocumentType
+  documentNumber: string | null
+  issueDate: string | null
+  expiryDate: string | null
+  createdAt: string
+}
+
+export interface SaveUserIdentityDocumentRequest {
+  documentType: DocumentType
+  documentNumber?: string | null
+  issueDate?: string | null
+  expiryDate?: string | null
+}
+
+export async function apiGetUserIdentityDocuments(): Promise<UserIdentityDocumentResponse[]> {
+  const res = await fetch(`${BASE_URL}/api/users/me/documents`, {
+    method: "GET",
+    headers: authHeaders(),
+  })
+  return handleResponse<UserIdentityDocumentResponse[]>(res)
+}
+
+export async function apiSaveUserIdentityDocument(data: SaveUserIdentityDocumentRequest): Promise<UserIdentityDocumentResponse> {
+  const res = await fetch(`${BASE_URL}/api/users/me/documents`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  })
+  return handleResponse<UserIdentityDocumentResponse>(res)
+}
+
+export async function apiUpdateUserIdentityDocument(id: number, data: SaveUserIdentityDocumentRequest): Promise<UserIdentityDocumentResponse> {
+  const res = await fetch(`${BASE_URL}/api/users/me/documents/${id}`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  })
+  return handleResponse<UserIdentityDocumentResponse>(res)
+}
+
+export async function apiDeleteUserIdentityDocument(id: number): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/users/me/documents/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  })
+  return handleResponse<void>(res)
+}
+
 export async function apiUploadRequestFiles(
   requestId: number,
   files: File[]
