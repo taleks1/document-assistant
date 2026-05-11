@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Shield, ArrowLeft, CheckCircle, Key } from "lucide-react"
+import { Loader2, Shield, ArrowLeft, CheckCircle } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { apiChangePassword } from "@/lib/api"
 

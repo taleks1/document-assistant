@@ -26,7 +26,7 @@ import { apiGetAdminUsers, type User, type Page } from "@/lib/api"
 import {
   Search,
   Filter,
-  User,
+  User as UserIcon,
   Eye,
   Loader2,
   AlertCircle,
@@ -230,7 +230,7 @@ export default function UsersPage() {
                       <TableCell className="rounded-l-[14px] border border-r-0 bg-white px-3 py-3 shadow-sm">
                         <div className="flex items-center justify-center gap-2">
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f3f3f3]">
-                            <User className="h-4 w-4 text-slate-600" />
+                            <UserIcon className="h-4 w-4 text-slate-600" />
                           </div>
                           <div className="text-center">
                             <p className="text-xs font-medium text-slate-700">

@@ -13,7 +13,7 @@ import { mockRequests, requestTypeLabels } from "@/lib/mock-data"
 import { apiGetAdminUserById, type User } from "@/lib/api"
 import {
   ArrowLeft,
-  User,
+  User as UserIcon,
   Mail,
   Calendar,
   Shield,
@@ -112,14 +112,14 @@ export default function AdminUserDetailPage() {
           <div className="flex items-start gap-6">
             {/* Avatar */}
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <User className="h-8 w-8 text-primary" />
+              <UserIcon className="h-8 w-8 text-primary" />
             </div>
 
             {/* Details grid */}
             <div className="grid flex-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
 
               <div className="flex items-start gap-2">
-                <User className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <UserIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">Име и презиме</p>
                   <p className="font-medium text-foreground">

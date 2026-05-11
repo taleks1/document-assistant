@@ -20,7 +20,6 @@ import {
   Loader2,
   Mail,
   Shield,
-  Settings as SettingsIcon,
   LogOut
 } from "lucide-react"
 import { apiUpdateUser, User as ApiUser } from "@/lib/api"

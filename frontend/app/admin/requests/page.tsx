@@ -25,7 +25,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/status-badge"
@@ -39,11 +38,7 @@ import {
 import {
   Search,
   Filter,
-  MoreHorizontal,
   Eye,
-  CheckCircle,
-  XCircle,
-  Download,
   Users,
   SortAsc,
 } from "lucide-react"
