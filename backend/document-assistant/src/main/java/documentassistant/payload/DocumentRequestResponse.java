@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.List;
 
 @Data
 @Builder
@@ -29,6 +30,7 @@ public class DocumentRequestResponse {
     private String rejectionReason;
     private Instant createdAt;
     private Instant updatedAt;
+    private List<StatusHistoryResponse> statusHistory;
 
     public static DocumentRequestResponse from(DocumentRequest request) {
         return DocumentRequestResponse.builder()
@@ -45,6 +47,9 @@ public class DocumentRequestResponse {
                 .rejectionReason(request.getRejectionReason())
                 .createdAt(request.getCreatedAt())
                 .updatedAt(request.getUpdatedAt())
+                .statusHistory(request.getStatusHistory() != null ? 
+                    request.getStatusHistory().stream().map(StatusHistoryResponse::from).toList() : 
+                    java.util.Collections.emptyList())
                 .build();
     }
 }
