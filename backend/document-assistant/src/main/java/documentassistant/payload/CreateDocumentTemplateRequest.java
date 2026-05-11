@@ -18,6 +18,6 @@ public class CreateDocumentTemplateRequest {
     @NotBlank
     private String description;
 
-    @NotBlank
-    private String fieldsJson;
+    @NotNull
+    private Object schemaJson;
 }

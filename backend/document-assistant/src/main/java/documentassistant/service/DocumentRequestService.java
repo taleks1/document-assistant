@@ -1,9 +1,12 @@
 package documentassistant.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import documentassistant.exception.InvalidRequestStateException;
 import documentassistant.exception.NoDocumentRequestsFoundException;
 import documentassistant.exception.ResourceNotFoundException;
 import documentassistant.model.entity.DocumentRequest;
+import documentassistant.model.entity.DocumentTemplate;
+import documentassistant.model.entity.StatusHistory;
 import documentassistant.model.enums.DocumentRequestStatus;
 import documentassistant.payload.CreateDocumentRequest;
 import documentassistant.payload.DocumentRequestResponse;
@@ -23,27 +26,64 @@ public class DocumentRequestService {
     private final DocumentRequestRepository repository;
     private final ReferenceNumberGenerator referenceNumberGenerator;
     private final UserService userService;
+    private final ObjectMapper objectMapper;
+    public final DocumentTemplateService templateService;
 
     @Transactional
-    public DocumentRequestResponse create(CreateDocumentRequest request) {
-        DocumentRequest documentRequest = DocumentRequest.builder()
-                .referenceNumber(referenceNumberGenerator.generate())
-                .user(userService.getCurrentUser())
-                .type(request.getType())
-                .title(request.getTitle().trim())
-                .description(request.getDescription().trim())
-                .notes(request.getNotes() == null ? null : request.getNotes().trim())
-                .status(DocumentRequestStatus.SUBMITTED)
-                .statusHistory(new java.util.ArrayList<>(java.util.List.of(
-                        documentassistant.model.entity.StatusHistory.builder()
-                                .status(DocumentRequestStatus.SUBMITTED)
-                                .timestamp(java.time.Instant.now())
-                                .note("Барањето е поднесено")
-                                .build()
-                )))
-                .build();
+    public DocumentRequestResponse create(
+            CreateDocumentRequest request
+    ) {
 
-        DocumentRequest saved = repository.save(documentRequest);
+        DocumentTemplate template =
+                templateService.getActiveTemplate(
+                        request.getTemplateId()
+                );
+
+        // FUTURE:
+        // validate submittedData against schema
+
+        DocumentRequest documentRequest =
+                DocumentRequest.builder()
+                        .referenceNumber(
+                                referenceNumberGenerator.generate()
+                        )
+                        .user(userService.getCurrentUser())
+                        .template(template)
+                        .templateVersion(template.getVersion())
+                        .templateSchemaSnapshot(
+                                template.getSchemaJson()
+                        )
+                        .submittedData(
+                                objectMapper.valueToTree(request.getSubmittedData())
+                        )
+                        .notes(
+                                request.getNotes() == null
+                                        ? null
+                                        : request.getNotes().trim()
+                        )
+                        .status(DocumentRequestStatus.SUBMITTED)
+                        .statusHistory(
+                                new java.util.ArrayList<>(
+                                        java.util.List.of(
+                                                StatusHistory.builder()
+                                                        .status(
+                                                                DocumentRequestStatus.SUBMITTED
+                                                        )
+                                                        .timestamp(
+                                                                java.time.Instant.now()
+                                                        )
+                                                        .note(
+                                                                "Барањето е поднесено"
+                                                        )
+                                                        .build()
+                                        )
+                                )
+                        )
+                        .build();
+
+        DocumentRequest saved =
+                repository.save(documentRequest);
+
         return DocumentRequestResponse.from(saved);
     }
 
@@ -69,8 +109,8 @@ public class DocumentRequestService {
             throw new InvalidRequestStateException("Only requests in SUBMITTED status can be updated");
         }
 
-        documentRequest.setTitle(request.getTitle().trim());
-        documentRequest.setDescription(request.getDescription().trim());
+        documentRequest.setSubmittedData(objectMapper.valueToTree(request.getSubmittedData()));
+        documentRequest.setNotes(request.getNotes().trim());
         documentRequest.setNotes(
                 request.getNotes() == null ? null : request.getNotes().trim()
         );

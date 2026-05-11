@@ -1,31 +1,22 @@
 package documentassistant.payload;
 
-import documentassistant.model.enums.DocumentRequestType;
-import jakarta.validation.constraints.NotBlank;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class CreateDocumentRequest {
 
-    @NotNull(message = "Type is required")
-    private DocumentRequestType type;
+    @NotNull(message = "Template id is required")
+    private Long templateId;
 
-    @NotBlank(message = "Title is required")
-    @Size(max = 200, message = "Title must be at most 200 characters")
-    private String title;
+    /**
+     * Dynamic submitted form values.
+     */
+    @NotNull(message = "Submitted data is required")
+    private Object submittedData;
 
-    @NotBlank(message = "Description is required")
-    @Size(max = 4000, message = "Description must be at most 4000 characters")
-    private String description;
-
-    @Size(max = 2000, message = "Notes must be at most 2000 characters")
+    @Size(max = 2000)
     private String notes;
 }

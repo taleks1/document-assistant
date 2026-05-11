@@ -1,5 +1,6 @@
 package documentassistant.web;
 
+import documentassistant.model.entity.DocumentTemplate;
 import documentassistant.payload.CreateDocumentTemplateRequest;
 import documentassistant.payload.DocumentTemplateResponse;
 import documentassistant.service.DocumentTemplateService;
@@ -17,18 +18,16 @@ public class DocumentTemplateController {
 
     private final DocumentTemplateService service;
 
-    @GetMapping("/{type}")
+    @GetMapping("/{id}")
     public ResponseEntity<DocumentTemplateResponse> getByType(
-            @PathVariable String type
-    ) {
-        return ResponseEntity.ok(service.getByType(type));
+            @PathVariable Long id) {
+        return ResponseEntity.ok(DocumentTemplateResponse.from(service.getActiveTemplate(id)));
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<DocumentTemplateResponse> create(
-            @Valid @RequestBody CreateDocumentTemplateRequest request
-    ) {
+            @Valid @RequestBody CreateDocumentTemplateRequest request) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(service.create(request));

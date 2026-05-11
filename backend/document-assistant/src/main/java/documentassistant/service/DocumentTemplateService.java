@@ -1,36 +1,32 @@
 package documentassistant.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import documentassistant.exception.ResourceNotFoundException;
 import documentassistant.model.entity.DocumentTemplate;
-import documentassistant.model.enums.DocumentRequestType;
 import documentassistant.payload.CreateDocumentTemplateRequest;
 import documentassistant.payload.DocumentTemplateResponse;
 import documentassistant.repository.DocumentTemplateRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class DocumentTemplateService {
 
     private final DocumentTemplateRepository repository;
+    private final ObjectMapper objectMapper;
 
-    public DocumentTemplateResponse getByType(String type) {
+    @Transactional(readOnly = true)
+    public DocumentTemplate getActiveTemplate(Long id) {
 
-        try {
-
-            DocumentRequestType requestType =
-                    DocumentRequestType.valueOf(type.toUpperCase());
-
-            return repository.findByType(requestType)
-                    .map(DocumentTemplateResponse::from)
-                    .orElseThrow(() ->
-                            new ResourceNotFoundException("Template not found"));
-
-        } catch (IllegalArgumentException e) {
-            throw new ResourceNotFoundException("Invalid template type");
-        }
+        return repository.findByIdAndActiveTrue(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Template not found"
+                        )
+                );
     }
 
     @Transactional
@@ -44,11 +40,10 @@ public class DocumentTemplateService {
                 .type(request.getType())
                 .title(request.getTitle().trim())
                 .description(request.getDescription().trim())
-                .fieldsJson(request.getFieldsJson())
+                .schemaJson(objectMapper.valueToTree(request.getSchemaJson()))
                 .build();
 
         return DocumentTemplateResponse.from(
-                repository.save(template)
-        );
+                repository.save(template));
     }
 }

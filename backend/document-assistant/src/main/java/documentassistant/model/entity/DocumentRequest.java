@@ -1,35 +1,23 @@
 package documentassistant.model.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import documentassistant.model.enums.DocumentRequestStatus;
-import documentassistant.model.enums.DocumentRequestType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
-@Data
+@Entity
+@Table(name = "document_requests")
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "document_requests")
 public class DocumentRequest {
 
     @Id
@@ -39,20 +27,40 @@ public class DocumentRequest {
     @Column(nullable = false, unique = true, length = 32)
     private String referenceNumber;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id")
     private User user;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
-    private DocumentRequestType type;
+    /**
+     * Template used for this request.
+     */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "template_id")
+    private DocumentTemplate template;
 
-    @Column(nullable = false, length = 200)
-    private String title;
+    /**
+     * Immutable snapshot version.
+     */
+    @Column(nullable = false)
+    private Integer templateVersion;
 
-    @Column(nullable = false, length = 4000)
-    private String description;
+    /**
+     * Snapshot of schema at submission time.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(nullable = false, columnDefinition = "jsonb")
+    private JsonNode templateSchemaSnapshot;
 
+    /**
+     * Actual submitted citizen values.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(nullable = false, columnDefinition = "jsonb")
+    private JsonNode submittedData;
+
+    /**
+     * Citizen additional notes.
+     */
     @Column(length = 2000)
     private String notes;
 
@@ -60,16 +68,32 @@ public class DocumentRequest {
     @Column(nullable = false, length = 32)
     private DocumentRequestStatus status;
 
-    // Filled later when an admin rejects a request. Not touched on create.
     @Column(length = 2000)
     private String rejectionReason;
 
     @ElementCollection
-    @CollectionTable(name = "document_request_status_history", joinColumns = @jakarta.persistence.JoinColumn(name = "request_id"))
+    @CollectionTable(
+            name = "document_request_status_history",
+            joinColumns = @JoinColumn(name = "request_id")
+    )
     @Builder.Default
-    private java.util.List<StatusHistory> statusHistory = new java.util.ArrayList<>();
+    private List<StatusHistory> statusHistory = new ArrayList<>();
 
-    @Column(nullable = false)
+    /**
+     * Future-proofing.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "processed_by")
+    private User processedBy;
+
+    private Instant processedAt;
+
+    /**
+     * PDF/document path later.
+     */
+    private String generatedDocumentPath;
+
+    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
     @Column(nullable = false)
@@ -77,16 +101,19 @@ public class DocumentRequest {
 
     @PrePersist
     void onCreate() {
+
         Instant now = Instant.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-        if (this.status == null) {
-            this.status = DocumentRequestStatus.SUBMITTED;
+
+        createdAt = now;
+        updatedAt = now;
+
+        if (status == null) {
+            status = DocumentRequestStatus.SUBMITTED;
         }
     }
 
     @PreUpdate
     void onUpdate() {
-        this.updatedAt = Instant.now();
+        updatedAt = Instant.now();
     }
 }

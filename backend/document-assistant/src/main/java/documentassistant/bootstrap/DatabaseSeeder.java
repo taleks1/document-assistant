@@ -1,5 +1,7 @@
 package documentassistant.bootstrap;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import documentassistant.model.entity.DocumentRequest;
 import documentassistant.model.entity.DocumentTemplate;
 import documentassistant.model.entity.User;
@@ -13,7 +15,10 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -28,20 +33,46 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final DocumentTemplateRepository templateRepository;
     private final DocumentRequestRepository requestRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ObjectMapper objectMapper;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
+    @Transactional
     public void run(String @NonNull ... args){
 
         if (userRepository.count() > 0) {
-            System.out.println("Database already seeded.");
+            System.out.println("Database already seeded. Resetting sequences...");
+            resetSequences();
             return;
         }
 
         seedUsers();
         seedTemplates();
         seedRequests();
+        resetSequences();
 
         System.out.println("Database seeded successfully.");
+    }
+
+    private void resetSequences() {
+        try {
+            entityManager.createNativeQuery("SELECT setval('document_requests_id_seq', COALESCE((SELECT MAX(id) FROM document_requests), 1), (SELECT MAX(id) FROM document_requests) IS NOT NULL)").getSingleResult();
+            entityManager.createNativeQuery("SELECT setval('document_templates_id_seq', COALESCE((SELECT MAX(id) FROM document_templates), 1), (SELECT MAX(id) FROM document_templates) IS NOT NULL)").getSingleResult();
+            entityManager.createNativeQuery("SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 1), (SELECT MAX(id) FROM users) IS NOT NULL)").getSingleResult();
+            System.out.println("Sequences reset successfully.");
+        } catch (Exception e) {
+            System.err.println("Failed to reset sequences: " + e.getMessage());
+        }
+    }
+
+    private JsonNode parseJson(String json) {
+        try {
+            return objectMapper.readTree(json);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse JSON in seeder: " + json, e);
+        }
     }
 
     private void seedUsers() {
@@ -118,64 +149,70 @@ public class DatabaseSeeder implements CommandLineRunner {
 
                 DocumentTemplate.builder()
                         .type(DocumentRequestType.PERMIT)
-                        .title("Building Permit")
-                        .description("Request for construction permit.")
-                        .fieldsJson("""
+                        .title("Градежна дозвола")
+                        .description("Барање за добивање на градежна дозвола за објект.")
+                        .schemaJson(parseJson("""
                                 [
                                   {
                                     "name": "constructionAddress",
-                                    "label": "Construction Address",
+                                    "label": "Адреса на градење",
                                     "type": "text",
                                     "required": true
                                   },
                                   {
                                     "name": "parcelNumber",
-                                    "label": "Parcel Number",
+                                    "label": "Број на парцела",
                                     "type": "text",
                                     "required": true
                                   }
                                 ]
-                                """)
+                                """))
+                        .version(1)
+                        .active(true)
                         .createdAt(Instant.now())
                         .build(),
 
                 DocumentTemplate.builder()
                         .type(DocumentRequestType.COMPLAINT)
-                        .title("Citizen Complaint")
-                        .description("Official citizen complaint form.")
-                        .fieldsJson("""
+                        .title("Жалба од граѓани")
+                        .description("Официјален формулар за поднесување жалба.")
+                        .schemaJson(parseJson("""
                                 [
                                   {
                                     "name": "institution",
-                                    "label": "Institution",
+                                    "label": "Институција",
                                     "type": "text",
                                     "required": true
                                   },
                                   {
                                     "name": "details",
-                                    "label": "Complaint Details",
+                                    "label": "Детали на жалбата",
                                     "type": "textarea",
                                     "required": true
                                   }
                                 ]
-                                """)
+                                """))
+                        .version(1)
+                        .active(true)
                         .createdAt(Instant.now())
                         .build(),
 
                 DocumentTemplate.builder()
                         .type(DocumentRequestType.CERTIFICATE)
-                        .title("Birth Certificate Request")
-                        .description("Request issuance of a birth certificate.")
-                        .fieldsJson("""
+                        .title("Извод од матична книга")
+                        .description("Барање за издавање на извод од матична книга на родени.")
+                        .schemaJson(parseJson("""
                                 [
                                   {
                                     "name": "purpose",
-                                    "label": "Purpose",
+                                    "label": "Цел на барањето",
                                     "type": "text",
                                     "required": true
                                   }
                                 ]
-                                """)
+                                """))
+                        .version(1)
+                        .active(true)
                         .createdAt(Instant.now())
                         .build()
         );
@@ -191,47 +228,63 @@ public class DatabaseSeeder implements CommandLineRunner {
         User citizen2 = userRepository.findByEmail("marija@example.com")
                 .orElseThrow();
 
+        DocumentTemplate permitTemplate = templateRepository.findByType(DocumentRequestType.PERMIT).orElseThrow();
+        DocumentTemplate complaintTemplate = templateRepository.findByType(DocumentRequestType.COMPLAINT).orElseThrow();
+        DocumentTemplate certificateTemplate = templateRepository.findByType(DocumentRequestType.CERTIFICATE).orElseThrow();
+
         List<DocumentRequest> requests = List.of(
 
                 DocumentRequest.builder()
                         .referenceNumber("REQ-2026-000001")
                         .user(citizen1)
-                        .type(DocumentRequestType.PERMIT)
-                        .title("Garage Construction Permit")
-                        .description("Need approval for garage construction.")
-                        .notes("Attached all required documentation.")
+                        .template(permitTemplate)
+                        .templateVersion(permitTemplate.getVersion())
+                        .templateSchemaSnapshot(permitTemplate.getSchemaJson())
+                        .submittedData(parseJson("""
+                                {
+                                  "constructionAddress": "Партизанска 10, Скопје",
+                                  "parcelNumber": "123/45"
+                                }
+                                """))
+                        .notes("Приложена целата потребна документација.")
                         .status(DocumentRequestStatus.SUBMITTED)
+                        .createdAt(Instant.now())
+                        .updatedAt(Instant.now())
                         .build(),
 
                 DocumentRequest.builder()
                         .referenceNumber("REQ-2026-000002")
                         .user(citizen1)
-                        .type(DocumentRequestType.COMPLAINT)
-                        .title("Noise Complaint")
-                        .description("Excessive noise during night hours.")
-                        .notes("Occurred repeatedly.")
+                        .template(complaintTemplate)
+                        .templateVersion(complaintTemplate.getVersion())
+                        .templateSchemaSnapshot(complaintTemplate.getSchemaJson())
+                        .submittedData(parseJson("""
+                                {
+                                  "institution": "Општина Центар",
+                                  "details": "Прекумерна бучава во ноќните часови."
+                                }
+                                """))
+                        .notes("Се случува постојано.")
                         .status(DocumentRequestStatus.IN_REVIEW)
+                        .createdAt(Instant.now())
+                        .updatedAt(Instant.now())
                         .build(),
 
                 DocumentRequest.builder()
                         .referenceNumber("REQ-2026-000003")
                         .user(citizen2)
-                        .type(DocumentRequestType.CERTIFICATE)
-                        .title("Birth Certificate")
-                        .description("Need birth certificate for university.")
-                        .notes("Urgent processing requested.")
+                        .template(certificateTemplate)
+                        .templateVersion(certificateTemplate.getVersion())
+                        .templateSchemaSnapshot(certificateTemplate.getSchemaJson())
+                        .submittedData(parseJson("""
+                                {
+                                  "purpose": "За упис на факултет"
+                                }
+                                """))
+                        .notes("Потребно е итно процесирање.")
                         .status(DocumentRequestStatus.APPROVED)
-                        .build(),
-
-                DocumentRequest.builder()
-                        .referenceNumber("REQ-2026-000004")
-                        .user(citizen2)
-                        .type(DocumentRequestType.OBJECTION)
-                        .title("Parking Fine Objection")
-                        .description("Objecting to unfair parking fine.")
-                        .notes("Photos attached.")
-                        .status(DocumentRequestStatus.REJECTED)
-                        .rejectionReason("Insufficient evidence.")
+                        .createdAt(Instant.now())
+                        .updatedAt(Instant.now())
                         .build()
         );
 
