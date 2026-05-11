@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -24,14 +24,23 @@ import {
   Calendar,
   Globe,
   Upload,
-  Scan
+  Trash2,
+  CreditCard,
+  Pencil,
+  Plus,
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { useRouter } from "next/navigation"
 
 import {
   apiUpdateUser,
-  User as ApiUser
+  apiGetUserIdentityDocuments,
+  apiDeleteUserIdentityDocument,
+  apiUpdateUserIdentityDocument,
+  apiSaveUserIdentityDocument,
+  UserIdentityDocumentResponse,
+  DocumentType,
+  User as ApiUser,
 } from "@/lib/api"
 
 const profileSchema = z.object({
@@ -58,6 +67,21 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
+  const [savedDocs, setSavedDocs] = useState<UserIdentityDocumentResponse[]>([])
+  const [deletingDocId, setDeletingDocId] = useState<number | null>(null)
+  const [editingDoc, setEditingDoc] = useState<UserIdentityDocumentResponse | null>(null)
+  const [editForm, setEditForm] = useState({ documentType: "" as DocumentType, documentNumber: "", issueDate: "", expiryDate: "" })
+  const [savingDoc, setSavingDoc] = useState(false)
+  const [docError, setDocError] = useState<string | null>(null)
+  const [addingDoc, setAddingDoc] = useState(false)
+  const [addForm, setAddForm] = useState({ documentType: "ID_CARD" as DocumentType, documentNumber: "", issueDate: "", expiryDate: "" })
+  const [addError, setAddError] = useState<string | null>(null)
+
+  const loadDocuments = useCallback(() => {
+    apiGetUserIdentityDocuments().then(setSavedDocs).catch(() => {})
+  }, [])
+
+  useEffect(() => { loadDocuments() }, [loadDocuments])
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -119,6 +143,73 @@ export default function ProfilePage() {
   const handleCancel = () => {
     profileForm.reset()
     setIsEditing(false)
+  }
+
+  const handleDeleteDoc = async (id: number) => {
+    setDeletingDocId(id)
+    try {
+      await apiDeleteUserIdentityDocument(id)
+      loadDocuments()
+    } finally {
+      setDeletingDocId(null)
+    }
+  }
+
+  const handleAddDoc = async () => {
+    setAddError(null)
+    setSavingDoc(true)
+    try {
+      await apiSaveUserIdentityDocument({
+        documentType: addForm.documentType,
+        documentNumber: addForm.documentNumber || null,
+        issueDate: addForm.issueDate || null,
+        expiryDate: addForm.expiryDate || null,
+      })
+      setAddingDoc(false)
+      setAddForm({ documentType: "ID_CARD", documentNumber: "", issueDate: "", expiryDate: "" })
+      loadDocuments()
+    } catch (err: any) {
+      setAddError(err.message || "Грешка при зачувување.")
+    } finally {
+      setSavingDoc(false)
+    }
+  }
+
+  const handleStartEdit = (doc: UserIdentityDocumentResponse) => {
+    setEditingDoc(doc)
+    setDocError(null)
+    setEditForm({
+      documentType: doc.documentType,
+      documentNumber: doc.documentNumber ?? "",
+      issueDate: doc.issueDate ?? "",
+      expiryDate: doc.expiryDate ?? "",
+    })
+  }
+
+  const handleSaveDoc = async () => {
+    if (!editingDoc) return
+    setDocError(null)
+    setSavingDoc(true)
+    try {
+      await apiUpdateUserIdentityDocument(editingDoc.id, {
+        documentType: editForm.documentType,
+        documentNumber: editForm.documentNumber || null,
+        issueDate: editForm.issueDate || null,
+        expiryDate: editForm.expiryDate || null,
+      })
+      setEditingDoc(null)
+      loadDocuments()
+    } catch (err: any) {
+      setDocError(err.message || "Грешка при зачувување.")
+    } finally {
+      setSavingDoc(false)
+    }
+  }
+
+  const docTypeLabels: Record<string, string> = {
+    ID_CARD: "Лична карта",
+    PASSPORT: "Пасош",
+    DRIVING_LICENSE: "Возачка дозвола",
   }
 
   if (!user) return null
@@ -284,26 +375,130 @@ export default function ProfilePage() {
 
                 <Separator className="my-6" />
 
-                <CardTitle className="text-lg mb-4">Документи за идентификација</CardTitle>
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="cardId" className="text-xs text-muted-foreground uppercase font-bold">Број на лична карта</Label>
-                    <div className="relative">
-                      <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="cardId" readOnly={!isEditing} {...profileForm.register("cardId")} className={`pl-10 bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
+                <div className="flex items-center justify-between mb-4">
+                  <CardTitle className="text-lg">Зачувани документи</CardTitle>
+                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setAddingDoc(true); setAddError(null) }}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {addingDoc && (
+                  <div className="mb-4 space-y-3 rounded-xl border border-border bg-muted/30 p-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground uppercase font-bold">Тип на документ</Label>
+                      <select
+                        value={addForm.documentType}
+                        onChange={(e) => setAddForm((f) => ({ ...f, documentType: e.target.value as DocumentType }))}
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                      >
+                        <option value="ID_CARD">Лична карта</option>
+                        <option value="PASSPORT">Пасош</option>
+                        <option value="DRIVING_LICENSE">Возачка дозвола</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground uppercase font-bold">Број на документ</Label>
+                      <Input value={addForm.documentNumber} onChange={(e) => setAddForm((f) => ({ ...f, documentNumber: e.target.value }))} />
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground uppercase font-bold">Датум на издавање</Label>
+                        <Input type="date" value={addForm.issueDate} onChange={(e) => setAddForm((f) => ({ ...f, issueDate: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground uppercase font-bold">Датум на истекување</Label>
+                        <Input type="date" value={addForm.expiryDate} onChange={(e) => setAddForm((f) => ({ ...f, expiryDate: e.target.value }))} />
+                      </div>
+                    </div>
+                    {addError && <p className="text-xs text-destructive">{addError}</p>}
+                    <div className="flex justify-end gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={() => setAddingDoc(false)}>Откажи</Button>
+                      <Button type="button" size="sm" disabled={savingDoc} onClick={handleAddDoc} className="gap-2">
+                        {savingDoc ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                        Зачувај
+                      </Button>
                     </div>
                   </div>
+                )}
 
-                  <div className="space-y-2">
-                    <Label htmlFor="cardIssueDate" className="text-xs text-muted-foreground uppercase font-bold">Датум на издавање</Label>
-                    <Input id="cardIssueDate" readOnly={!isEditing} type="date" {...profileForm.register("cardIssueDate")} className={`bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
+                {savedDocs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Нема зачувани документи.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {savedDocs.map((doc) => (
+                      <div key={doc.id} className="rounded-xl border border-border bg-background/50">
+                        {editingDoc?.id === doc.id ? (
+                          <div className="space-y-3 p-4">
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground uppercase font-bold">Тип на документ</Label>
+                              <select
+                                value={editForm.documentType}
+                                onChange={(e) => setEditForm((f) => ({ ...f, documentType: e.target.value as DocumentType }))}
+                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                              >
+                                <option value="ID_CARD">Лична карта</option>
+                                <option value="PASSPORT">Пасош</option>
+                                <option value="DRIVING_LICENSE">Возачка дозвола</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground uppercase font-bold">Број на документ</Label>
+                              <Input value={editForm.documentNumber} onChange={(e) => setEditForm((f) => ({ ...f, documentNumber: e.target.value }))} />
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground uppercase font-bold">Датум на издавање</Label>
+                                <Input type="date" value={editForm.issueDate} onChange={(e) => setEditForm((f) => ({ ...f, issueDate: e.target.value }))} />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground uppercase font-bold">Датум на истекување</Label>
+                                <Input type="date" value={editForm.expiryDate} onChange={(e) => setEditForm((f) => ({ ...f, expiryDate: e.target.value }))} />
+                              </div>
+                            </div>
+                            {docError && <p className="text-xs text-destructive">{docError}</p>}
+                            <div className="flex justify-end gap-2">
+                              <Button type="button" variant="outline" size="sm" onClick={() => setEditingDoc(null)}>Откажи</Button>
+                              <Button type="button" size="sm" disabled={savingDoc} onClick={handleSaveDoc} className="gap-2">
+                                {savingDoc ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                                Зачувај
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                                <CreditCard className="h-5 w-5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">{docTypeLabels[doc.documentType]}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {doc.documentNumber && `Бр. ${doc.documentNumber}`}
+                                  {doc.expiryDate && ` · Важи до ${doc.expiryDate}`}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStartEdit(doc)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDeleteDoc(doc.id)}
+                                disabled={deletingDocId === doc.id}
+                              >
+                                {deletingDocId === doc.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cardExpiryDate" className="text-xs text-muted-foreground uppercase font-bold">Датум на истекување</Label>
-                    <Input id="cardExpiryDate" readOnly={!isEditing} type="date" {...profileForm.register("cardExpiryDate")} className={`bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </form>

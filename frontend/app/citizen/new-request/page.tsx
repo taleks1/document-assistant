@@ -1,29 +1,55 @@
-"use client"
+"use client";
 
-import { useState, useCallback } from "react"
-import { useRouter } from "next/navigation"
-import { useForm, Controller } from "react-hook-form"
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useForm, Controller } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Upload, FileText, Loader2, CheckCircle, X, Brain, AlertCircle, CalendarIcon } from "lucide-react"
-import { format, parse, isValid } from "date-fns"
-import { apiOcrUpload, apiCreateRequest, apiUploadRequestFiles } from "@/lib/api"
+} from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Upload,
+  FileText,
+  Loader2,
+  CheckCircle,
+  X,
+  Brain,
+  AlertCircle,
+  CalendarIcon,
+} from "lucide-react";
+import { format, parse, isValid } from "date-fns";
+import {
+  apiOcrUpload,
+  apiCreateRequest,
+  apiUploadRequestFiles,
+  apiGetUserIdentityDocuments,
+  UserIdentityDocumentResponse,
+} from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 
 const requestTypeLabels: Record<string, string> = {
   request: "Барање",
@@ -35,28 +61,62 @@ const requestTypeLabels: Record<string, string> = {
   statement: "Изјава",
   report: "Пријава",
   other: "Друго",
-}
+};
 
 const newRequestSchema = z.object({
-  firstName: z.string().trim().min(2, "Името мора да има најмалку 2 карактери."),
-  lastName: z.string().trim().min(2, "Презимето мора да има најмалку 2 карактери."),
+  firstName: z
+    .string()
+    .trim()
+    .min(2, "Името мора да има најмалку 2 карактери."),
+  lastName: z
+    .string()
+    .trim()
+    .min(2, "Презимето мора да има најмалку 2 карактери."),
   idNumber: z.string().trim().min(3, "Внеси валиден број на личен документ."),
-  address: z.string().trim().min(5, "Адресата мора да има најмалку 5 карактери."),
-  dateOfBirth: z.string().regex(/^\d{2}\.\d{2}\.\d{4}$/, "Внеси датум во формат ДД.ММ.ГГГГ (пр. 18.08.1979)."),
-  embg: z.string().trim().regex(/^\d{13}$/, "ЕМБГ мора да содржи точно 13 цифри."),
-  documentExpiryDate: z.string().regex(/^\d{2}\.\d{2}\.\d{4}$/, "Внеси датум во формат ДД.ММ.ГГГГ (пр. 19.06.2025)."),
+  address: z
+    .string()
+    .trim()
+    .min(5, "Адресата мора да има најмалку 5 карактери."),
+  dateOfBirth: z
+    .string()
+    .regex(
+      /^\d{2}\.\d{2}\.\d{4}$/,
+      "Внеси датум во формат ДД.ММ.ГГГГ (пр. 18.08.1979).",
+    ),
+  embg: z
+    .string()
+    .trim()
+    .regex(/^\d{13}$/, "ЕМБГ мора да содржи точно 13 цифри."),
+  documentExpiryDate: z
+    .string()
+    .regex(
+      /^\d{2}\.\d{2}\.\d{4}$/,
+      "Внеси датум во формат ДД.ММ.ГГГГ (пр. 19.06.2025).",
+    ),
   requestType: z.string().min(1, "Избери тип на барање."),
-  requestTitle: z.string().trim().min(3, "Насловот мора да има најмалку 3 карактери."),
-  description: z.string().trim().min(10, "Описот мора да има најмалку 10 карактери."),
+  requestTitle: z
+    .string()
+    .trim()
+    .min(3, "Насловот мора да има најмалку 3 карактери."),
+  description: z
+    .string()
+    .trim()
+    .min(10, "Описот мора да има најмалку 10 карактери."),
   notes: z.string().optional(),
-})
+});
 
-type NewRequestFormValues = z.infer<typeof newRequestSchema>
+type NewRequestFormValues = z.infer<typeof newRequestSchema>;
 
-function DatePickerField({ value, onChange }: { value: string; onChange: (val: string) => void }) {
-  const [open, setOpen] = useState(false)
-  const parsed = value ? parse(value, "dd.MM.yyyy", new Date()) : undefined
-  const selected = parsed && isValid(parsed) ? parsed : undefined
+function DatePickerField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const parsed = value ? parse(value, "dd.MM.yyyy", new Date()) : undefined;
+  const selected = parsed && isValid(parsed) ? parsed : undefined;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -75,28 +135,46 @@ function DatePickerField({ value, onChange }: { value: string; onChange: (val: s
           selected={selected}
           onSelect={(date) => {
             if (date) {
-              onChange(format(date, "dd.MM.yyyy"))
-              setOpen(false)
+              onChange(format(date, "dd.MM.yyyy"));
+              setOpen(false);
             }
           }}
         />
       </PopoverContent>
     </Popover>
-  )
+  );
+}
+
+function isoToDotDate(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const [year, month, day] = iso.split("-");
+  return `${day}.${month}.${year}`;
 }
 
 export default function NewRequestPage() {
-  const router = useRouter()
+  const router = useRouter();
+  const { user } = useAuth();
 
-  const [step, setStep] = useState<"upload" | "form" | "preview">("upload")
-  const [isExtracting, setIsExtracting] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
-  const [additionalFiles, setAdditionalFiles] = useState<File[]>([])
-  const [ocrUsed, setOcrUsed] = useState(false)
-  const [ocrError, setOcrError] = useState<string | null>(null)
-  const [submittedData, setSubmittedData] = useState<NewRequestFormValues | null>(null)
-  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [step, setStep] = useState<"upload" | "form" | "preview">("upload");
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
+  const [ocrUsed, setOcrUsed] = useState(false);
+  const [ocrError, setOcrError] = useState<string | null>(null);
+  const [submittedData, setSubmittedData] =
+    useState<NewRequestFormValues | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [savedDocuments, setSavedDocuments] = useState<UserIdentityDocumentResponse[]>(
+    [],
+  );
+  const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
+
+  useEffect(() => {
+    apiGetUserIdentityDocuments()
+      .then(setSavedDocuments)
+      .catch(() => {});
+  }, []);
 
   const form = useForm<NewRequestFormValues>({
     resolver: zodResolver(newRequestSchema),
@@ -114,44 +192,54 @@ export default function NewRequestPage() {
       description: "",
       notes: "",
     },
-  })
+  });
 
   const handleFileDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
+    e.preventDefault();
     const dropped = Array.from(e.dataTransfer.files).filter(
-      (f) => f.type.includes("image") || f.type === "application/pdf"
-    )
+      (f) => f.type.includes("image") || f.type === "application/pdf",
+    );
     if (dropped.length > 0) {
-      setUploadedFiles((prev) => [...prev, ...dropped])
-      setOcrError(null)
+      setUploadedFiles((prev) => [...prev, ...dropped]);
+      setOcrError(null);
     }
-  }, [])
+  }, []);
 
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = Array.from(e.target.files || [])
-    if (selected.length > 0) {
-      setUploadedFiles((prev) => [...prev, ...selected])
-      setOcrError(null)
-      e.target.value = ""
-    }
-  }, [])
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selected = Array.from(e.target.files || []);
+      if (selected.length > 0) {
+        setUploadedFiles((prev) => [...prev, ...selected]);
+        setOcrError(null);
+        e.target.value = "";
+      }
+    },
+    [],
+  );
 
   const handleExtract = async () => {
-    if (uploadedFiles.length === 0) return
+    if (uploadedFiles.length === 0) return;
 
-    setIsExtracting(true)
-    setOcrError(null)
+    setIsExtracting(true);
+    setOcrError(null);
 
     try {
-      const data = await apiOcrUpload(uploadedFiles)
-      const fields_en = data?.parsed?.fields_en ?? {}
-      const fields_mk = data?.parsed?.fields_mk ?? {}
-      const fields = { ...fields_en, ...fields_mk }
-      const hasData = !!(fields.name || fields.surname || fields.idNumber || fields.embg)
+      const data = await apiOcrUpload(uploadedFiles);
+      const fields_en = data?.parsed?.fields_en ?? {};
+      const fields_mk = data?.parsed?.fields_mk ?? {};
+      const fields = { ...fields_en, ...fields_mk };
+      const hasData = !!(
+        fields.name ||
+        fields.surname ||
+        fields.idNumber ||
+        fields.embg
+      );
 
       if (!hasData) {
-        setOcrError("AI не успеа да извлече податоци од документот. Обидете се со подобра слика или прескокнете.")
-        return
+        setOcrError(
+          "AI не успеа да извлече податоци од документот. Обидете се со подобра слика или прескокнете.",
+        );
+        return;
       }
 
       form.reset({
@@ -166,27 +254,29 @@ export default function NewRequestPage() {
         requestTitle: "",
         description: "",
         notes: "",
-      })
+      });
 
-      setOcrUsed(true)
-      setStep("form")
+      setOcrUsed(true);
+      setStep("form");
     } catch {
-      setOcrError("Неуспешно извлекување на податоци. Обидете се повторно или прескокнете.")
+      setOcrError(
+        "Неуспешно извлекување на податоци. Обидете се повторно или прескокнете.",
+      );
     } finally {
-      setIsExtracting(false)
+      setIsExtracting(false);
     }
-  }
+  };
 
   const onFormSubmit = (values: NewRequestFormValues) => {
-    setSubmittedData(values)
-    setStep("preview")
-  }
+    setSubmittedData(values);
+    setStep("preview");
+  };
 
   const handleSubmitFinal = async () => {
-    if (!submittedData) return
+    if (!submittedData) return;
 
-    setIsSubmitting(true)
-    setSubmitError(null)
+    setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
       const created = await apiCreateRequest({
@@ -194,44 +284,72 @@ export default function NewRequestPage() {
         title: submittedData.requestTitle,
         description: submittedData.description,
         notes: submittedData.notes || null,
-      })
+      });
 
       if (additionalFiles.length > 0) {
-        await apiUploadRequestFiles(created.id, additionalFiles)
+        await apiUploadRequestFiles(created.id, additionalFiles);
       }
 
-      router.push("/citizen/requests")
+      router.push("/citizen/requests");
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Грешка при поднесување.")
+      setSubmitError(
+        err instanceof Error ? err.message : "Грешка при поднесување.",
+      );
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
+
+  const docTypeLabels: Record<string, string> = {
+    ID_CARD: "Лична карта",
+    PASSPORT: "Пасош",
+    DRIVING_LICENSE: "Возачка дозвола",
+  };
+
+  const handlePrefillFromProfile = () => {
+    if (!user) return;
+    const doc = savedDocuments.find((d) => d.id === selectedDocId);
+    form.reset({
+      firstName: user.firstname ?? "",
+      lastName: user.lastname ?? "",
+      idNumber: doc ? (doc.documentNumber ?? "") : "",
+      address: user.address ?? "",
+      dateOfBirth: isoToDotDate(user.birthDate),
+      embg: user.embg ?? "",
+      documentExpiryDate: doc ? isoToDotDate(doc.expiryDate) : "",
+      requestType: "request",
+      requestTitle: "",
+      description: "",
+      notes: "",
+    });
+    setStep("form");
+  };
 
   const handleAdditionalFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    setAdditionalFiles((prev) => [...prev, ...files])
-  }
+    const files = Array.from(e.target.files || []);
+    setAdditionalFiles((prev) => [...prev, ...files]);
+  };
 
   const removeAdditionalFile = (index: number) => {
-    setAdditionalFiles((prev) => prev.filter((_, i) => i !== index))
-  }
+    setAdditionalFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
-  const previewData = submittedData ?? form.getValues()
+  const previewData = submittedData ?? form.getValues();
 
   return (
     <div className="p-6 lg:p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">Ново барање</h1>
         <p className="text-muted-foreground">
-          Поднесете ново административно барање со помош на AI обработка на документи
+          Поднесете ново административно барање со помош на AI обработка на
+          документи
         </p>
       </div>
 
       <div className="mb-4">
         <p className="text-sm text-muted-foreground">
-          Полињата означени со <span className="font-semibold text-red-500">*</span> се
-          задолжителни.
+          Полињата означени со{" "}
+          <span className="font-semibold text-red-500">*</span> се задолжителни.
         </p>
       </div>
 
@@ -302,8 +420,8 @@ export default function NewRequestPage() {
             <CardHeader>
               <CardTitle>Прикачете документ за идентификација</CardTitle>
               <CardDescription>
-                Прикачете лична карта, пасош или возачка дозвола. Нашата AI алатка автоматски ќе ги
-                извлече вашите податоци.
+                Прикачете лична карта, пасош или возачка дозвола. Нашата AI
+                алатка автоматски ќе ги извлече вашите податоци.
               </CardDescription>
             </CardHeader>
 
@@ -355,8 +473,10 @@ export default function NewRequestPage() {
                         size="icon"
                         className="h-7 w-7"
                         onClick={() => {
-                          setUploadedFiles((prev) => prev.filter((_, i) => i !== index))
-                          setOcrError(null)
+                          setUploadedFiles((prev) =>
+                            prev.filter((_, i) => i !== index),
+                          );
+                          setOcrError(null);
                         }}
                       >
                         <X className="h-4 w-4" />
@@ -398,7 +518,10 @@ export default function NewRequestPage() {
                   type="button"
                   variant="ghost"
                   className="w-full text-muted-foreground"
-                  onClick={() => setStep("form")}
+                  onClick={() => {
+                    form.reset({ firstName: "", lastName: "", idNumber: "", address: "", dateOfBirth: "", embg: "", documentExpiryDate: "", requestType: "request", requestTitle: "", description: "", notes: "" })
+                    setStep("form")
+                  }}
                   disabled={isExtracting}
                 >
                   Прескокни и пополни рачно
@@ -406,12 +529,131 @@ export default function NewRequestPage() {
               </div>
             </CardContent>
           </Card>
+
+          <div className="relative my-2">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                или
+              </span>
+            </div>
+          </div>
+
+          <Card className="border-border">
+            <CardHeader>
+              <CardTitle className="text-base">Пополни од профил</CardTitle>
+              <CardDescription>
+                Избери зачуван документ и лични податоци од профилот
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!user?.firstname ? (
+                <p className="text-sm text-muted-foreground">
+                  Профилот не содржи зачувани податоци.{" "}
+                  <a
+                    href="/citizen/profile"
+                    className="underline hover:text-foreground"
+                  >
+                    Дополни го профилот
+                  </a>
+                  .
+                </p>
+              ) : (
+                <>
+                  <div className="grid gap-2 rounded-lg border border-border bg-muted/30 p-4 text-sm sm:grid-cols-2">
+                    <div>
+                      <span className="text-muted-foreground">Ime:</span>{" "}
+                      {user.firstname} {user.lastname}
+                    </div>
+                    {user.embg && (
+                      <div>
+                        <span className="text-muted-foreground">ЕМБГ:</span>{" "}
+                        {user.embg}
+                      </div>
+                    )}
+                    {user.address && (
+                      <div>
+                        <span className="text-muted-foreground">Адреса:</span>{" "}
+                        {user.address}
+                      </div>
+                    )}
+                    {user.birthDate && (
+                      <div>
+                        <span className="text-muted-foreground">
+                          Датум на раѓање:
+                        </span>{" "}
+                        {isoToDotDate(user.birthDate)}
+                      </div>
+                    )}
+                  </div>
+
+                  {savedDocuments.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Избери документ:</p>
+                      {savedDocuments.map((doc) => (
+                        <button
+                          key={doc.id}
+                          type="button"
+                          onClick={() =>
+                            setSelectedDocId(
+                              doc.id === selectedDocId ? null : doc.id,
+                            )
+                          }
+                          className={`w-full rounded-lg border p-3 text-left text-sm transition-colors ${
+                            selectedDocId === doc.id
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-primary/50 hover:bg-muted/50"
+                          }`}
+                        >
+                          <p className="font-medium">
+                            {docTypeLabels[doc.documentType]}
+                          </p>
+                          <p className="text-muted-foreground">
+                            {doc.documentNumber && `Бр. ${doc.documentNumber}`}
+                            {doc.expiryDate &&
+                              ` · Важи до ${isoToDotDate(doc.expiryDate)}`}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {savedDocuments.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Нема зачувани документи.{" "}
+                      <a
+                        href="/citizen/profile/scan-id"
+                        className="underline hover:text-foreground"
+                      >
+                        Скенирај документ
+                      </a>
+                      .
+                    </p>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={handlePrefillFromProfile}
+                  >
+                    Пополни ги полињата
+                    {selectedDocId ? " со избраниот документ" : ""}
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 
       {step === "form" && (
-        <form onSubmit={form.handleSubmit(onFormSubmit)} className="mx-auto max-w-3xl space-y-6">
-
+        <form
+          onSubmit={form.handleSubmit(onFormSubmit)}
+          className="mx-auto max-w-3xl space-y-6"
+        >
           <Card className="border-none bg-white shadow-none">
             <CardHeader>
               <CardTitle>Лични податоци</CardTitle>
@@ -460,12 +702,17 @@ export default function NewRequestPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Датум на раѓање <span className="text-red-500">*</span></Label>
+                <Label>
+                  Датум на раѓање <span className="text-red-500">*</span>
+                </Label>
                 <Controller
                   control={form.control}
                   name="dateOfBirth"
                   render={({ field }) => (
-                    <DatePickerField value={field.value} onChange={field.onChange} />
+                    <DatePickerField
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
                   )}
                 />
                 {form.formState.errors.dateOfBirth && (
@@ -479,19 +726,31 @@ export default function NewRequestPage() {
                 <Label htmlFor="embg">
                   Матичен број (ЕМБГ) <span className="text-red-500">*</span>
                 </Label>
-                <Input id="embg" type="text" maxLength={13} {...form.register("embg")} />
+                <Input
+                  id="embg"
+                  type="text"
+                  maxLength={13}
+                  {...form.register("embg")}
+                />
                 {form.formState.errors.embg && (
-                  <p className="text-sm text-destructive">{form.formState.errors.embg.message}</p>
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.embg.message}
+                  </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label>Важност на документот <span className="text-red-500">*</span></Label>
+                <Label>
+                  Важност на документот <span className="text-red-500">*</span>
+                </Label>
                 <Controller
                   control={form.control}
                   name="documentExpiryDate"
                   render={({ field }) => (
-                    <DatePickerField value={field.value} onChange={field.onChange} />
+                    <DatePickerField
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
                   )}
                 />
                 {form.formState.errors.documentExpiryDate && (
@@ -518,7 +777,9 @@ export default function NewRequestPage() {
           <Card className="border-none bg-white shadow-none">
             <CardHeader>
               <CardTitle>Детали за барањето</CardTitle>
-              <CardDescription>Внесете дополнителни информации за вашето барање</CardDescription>
+              <CardDescription>
+                Внесете дополнителни информации за вашето барање
+              </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
@@ -532,7 +793,10 @@ export default function NewRequestPage() {
                     control={form.control}
                     name="requestType"
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Избери тип на барање" />
                         </SelectTrigger>
@@ -540,7 +804,9 @@ export default function NewRequestPage() {
                           <SelectItem value="request">Барање</SelectItem>
                           <SelectItem value="permit">Дозвола</SelectItem>
                           <SelectItem value="complaint">Жалба</SelectItem>
-                          <SelectItem value="application">Апликација</SelectItem>
+                          <SelectItem value="application">
+                            Апликација
+                          </SelectItem>
                           <SelectItem value="objection">Приговор</SelectItem>
                           <SelectItem value="certificate">Потврда</SelectItem>
                           <SelectItem value="statement">Изјава</SelectItem>
@@ -593,7 +859,9 @@ export default function NewRequestPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Дополнителни забелешки (опционално)</Label>
+                <Label htmlFor="notes">
+                  Дополнителни забелешки (опционално)
+                </Label>
                 <Textarea
                   id="notes"
                   placeholder="Дополнителни информации или посебни барања..."
@@ -623,7 +891,9 @@ export default function NewRequestPage() {
                       >
                         <div className="flex items-center gap-3">
                           <FileText className="h-5 w-5 text-muted-foreground" />
-                          <span className="text-sm font-medium">{file.name}</span>
+                          <span className="text-sm font-medium">
+                            {file.name}
+                          </span>
                         </div>
 
                         <Button
@@ -644,7 +914,7 @@ export default function NewRequestPage() {
                   <Button type="button" variant="outline" asChild>
                     <span>
                       <Upload className="mr-2 h-4 w-4" />
-                      Додај прилози
+                      Додади прилози
                     </span>
                   </Button>
                   <input
@@ -660,7 +930,11 @@ export default function NewRequestPage() {
           </Card>
 
           <div className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => setStep("upload")}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStep("upload")}
+            >
               Назад
             </Button>
             <Button type="submit">Генерирај документ</Button>
@@ -673,7 +947,9 @@ export default function NewRequestPage() {
           <Card className="border-border">
             <CardHeader>
               <CardTitle>Преглед на документ</CardTitle>
-              <CardDescription>Проверете го генерираниот документ пред поднесување</CardDescription>
+              <CardDescription>
+                Проверете го генерираниот документ пред поднесување
+              </CardDescription>
             </CardHeader>
 
             <CardContent>
@@ -682,7 +958,9 @@ export default function NewRequestPage() {
                   <h2 className="text-xl font-bold text-foreground">
                     ОБРАЗЕЦ ЗА АДМИНИСТРАТИВНО БАРАЊЕ
                   </h2>
-                  <p className="text-sm text-muted-foreground">Портал за јавни услуги</p>
+                  <p className="text-sm text-muted-foreground">
+                    Портал за јавни услуги
+                  </p>
                 </div>
 
                 <div className="space-y-4">
@@ -692,7 +970,8 @@ export default function NewRequestPage() {
                         Тип на барање
                       </p>
                       <p className="font-medium text-foreground">
-                        {requestTypeLabels[previewData.requestType] || previewData.requestType}
+                        {requestTypeLabels[previewData.requestType] ||
+                          previewData.requestType}
                       </p>
                     </div>
 
@@ -700,7 +979,9 @@ export default function NewRequestPage() {
                       <p className="text-xs font-medium uppercase text-muted-foreground">
                         Наслов на барање
                       </p>
-                      <p className="font-medium text-foreground">{previewData.requestTitle}</p>
+                      <p className="font-medium text-foreground">
+                        {previewData.requestTitle}
+                      </p>
                     </div>
                   </div>
 
@@ -715,22 +996,30 @@ export default function NewRequestPage() {
                         {previewData.firstName} {previewData.lastName}
                       </p>
                       <p>
-                        <span className="text-muted-foreground">Број на личен документ:</span>{" "}
+                        <span className="text-muted-foreground">
+                          Број на личен документ:
+                        </span>{" "}
                         {previewData.idNumber}
                       </p>
                       <p>
-                        <span className="text-muted-foreground">Датум на раѓање:</span>{" "}
+                        <span className="text-muted-foreground">
+                          Датум на раѓање:
+                        </span>{" "}
                         {previewData.dateOfBirth}
                       </p>
                       <p>
-                        <span className="text-muted-foreground">ЕМБГ:</span> {previewData.embg}
+                        <span className="text-muted-foreground">ЕМБГ:</span>{" "}
+                        {previewData.embg}
                       </p>
                       <p>
-                        <span className="text-muted-foreground">Важност на документот:</span>{" "}
+                        <span className="text-muted-foreground">
+                          Важност на документот:
+                        </span>{" "}
                         {previewData.documentExpiryDate}
                       </p>
                       <p className="sm:col-span-2">
-                        <span className="text-muted-foreground">Адреса:</span> {previewData.address}
+                        <span className="text-muted-foreground">Адреса:</span>{" "}
+                        {previewData.address}
                       </p>
                     </div>
                   </div>
@@ -739,7 +1028,9 @@ export default function NewRequestPage() {
                     <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">
                       Опис
                     </p>
-                    <p className="text-sm text-foreground">{previewData.description}</p>
+                    <p className="text-sm text-foreground">
+                      {previewData.description}
+                    </p>
                   </div>
 
                   {previewData.notes && (
@@ -747,7 +1038,9 @@ export default function NewRequestPage() {
                       <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">
                         Дополнителни забелешки
                       </p>
-                      <p className="text-sm text-foreground">{previewData.notes}</p>
+                      <p className="text-sm text-foreground">
+                        {previewData.notes}
+                      </p>
                     </div>
                   )}
 
@@ -776,7 +1069,11 @@ export default function NewRequestPage() {
           )}
 
           <div className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => setStep("form")}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStep("form")}
+            >
               Измени
             </Button>
             <Button
@@ -796,5 +1093,5 @@ export default function NewRequestPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

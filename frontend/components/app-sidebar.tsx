@@ -88,7 +88,7 @@ export function AppSidebar({ role }: AppSidebarProps) {
 
       {/* User Info & Logout */}
       <div className="border-t border-sidebar-border p-4">
-        <div className="mb-3 flex items-center gap-3">
+        <Link href={user?.role === "admin" ? "/admin/settings" : "/citizen/profile"} className="mb-3 flex items-center gap-3 rounded-lg p-1 hover:bg-sidebar-accent transition-colors">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sidebar-accent">
             <User className="h-5 w-5 text-sidebar-accent-foreground" />
           </div>
@@ -96,7 +96,7 @@ export function AppSidebar({ role }: AppSidebarProps) {
             <p className="truncate text-sm font-medium text-sidebar-foreground">{user?.name || "Корисник"}</p>
             <p className="truncate text-xs text-muted-foreground">{user?.email || "user@example.com"}</p>
           </div>
-        </div>
+        </Link>
         <Button
           variant="ghost"
           className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"

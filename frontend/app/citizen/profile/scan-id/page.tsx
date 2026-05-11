@@ -15,8 +15,19 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Loader2, CheckCircle, Brain, Upload, X, AlertCircle, CalendarIcon } from "lucide-react"
-import { apiOcrUpload, apiUpdateUser } from "@/lib/api"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { apiOcrUpload, apiUpdateUser, apiSaveUserIdentityDocument, apiGetUserIdentityDocuments, apiDeleteUserIdentityDocument, DocumentType, UserIdentityDocumentResponse } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const schema = z.object({
   firstName: z.string().min(2, "Името мора да има најмалку 2 карактери").or(z.literal("")),
@@ -24,6 +35,9 @@ const schema = z.object({
   embg: z.string().length(13, "ЕМБГ мора да има точно 13 цифри").or(z.literal("")),
   dateOfBirth: z.string().regex(/^\d{2}\.\d{2}\.\d{4}$/, "Внеси датум во формат ДД.ММ.ГГГГ").or(z.literal("")),
   address: z.string().optional().default(""),
+  idNumber: z.string().min(1, "Бројот на документот е задолжителен"),
+  issueDate: z.string().regex(/^\d{2}\.\d{2}\.\d{4}$/, "Внеси датум во формат ДД.ММ.ГГГГ").or(z.literal("")),
+  expiryDate: z.string().regex(/^\d{2}\.\d{2}\.\d{4}$/, "Внеси датум во формат ДД.ММ.ГГГГ").or(z.literal("")),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -70,16 +84,20 @@ export default function ScanIdPage() {
   const { refreshUser, user } = useAuth()
 
   const [step, setStep] = useState<"upload" | "form">("upload")
+  const [documentType, setDocumentType] = useState<DocumentType>("ID_CARD")
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [extractedFields, setExtractedFields] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [ocrError, setOcrError] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [replaceDialog, setReplaceDialog] = useState(false)
+  const [existingDoc, setExistingDoc] = useState<UserIdentityDocumentResponse | null>(null)
+  const [pendingValues, setPendingValues] = useState<FormValues | null>(null)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { firstName: "", lastName: "", embg: "", dateOfBirth: "", address: "" },
+    defaultValues: { firstName: "", lastName: "", embg: "", dateOfBirth: "", address: "", idNumber: "", issueDate: "", expiryDate: "" },
   })
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,7 +128,10 @@ export default function ScanIdPage() {
       const data = await apiOcrUpload(uploadedFiles)
       const fields_en = data?.parsed?.fields_en ?? {}
       const fields_mk = data?.parsed?.fields_mk ?? {}
-      const fields = { ...fields_en, ...fields_mk }
+      const fields = {
+        ...fields_en,
+        ...Object.fromEntries(Object.entries(fields_mk).filter(([, v]) => v != null)),
+      }
 
       const hasData = !!(fields.name || fields.surname || fields.embg)
       if (!hasData) {
@@ -125,6 +146,9 @@ export default function ScanIdPage() {
         embg: String(fields.embg ?? ""),
         dateOfBirth: fields.birthDate ?? "",
         address: fields.address ?? "",
+        idNumber: fields.idNumber ?? "",
+        issueDate: fields.issueDate ?? "",
+        expiryDate: fields.expiryDate ?? "",
       })
       setStep("form")
     } catch {
@@ -134,32 +158,81 @@ export default function ScanIdPage() {
     }
   }
 
+  const saveUserData = async (values: FormValues) => {
+    await apiUpdateUser({
+      ...(values.firstName && { firstname: values.firstName }),
+      ...(values.lastName && { lastname: values.lastName }),
+      ...(values.embg && { embg: values.embg }),
+      ...(values.dateOfBirth && { birthDate: dotDateToIso(values.dateOfBirth) }),
+      ...(values.address && { address: values.address }),
+      ...(values.idNumber && { cardId: values.idNumber }),
+      ...(values.issueDate && { cardIssueDate: dotDateToIso(values.issueDate) }),
+      ...(values.expiryDate && { cardExpiryDate: dotDateToIso(values.expiryDate) }),
+      ...(extractedFields.nationality && { nationality: extractedFields.nationality }),
+      ...(extractedFields.gender && { gender: extractedFields.gender }),
+    })
+    await refreshUser()
+    router.push("/citizen/profile")
+  }
+
   const onSubmit = async (values: FormValues) => {
     setSaving(true)
     setSaveError(null)
     try {
-      await apiUpdateUser({
-        ...(values.firstName && { firstname: values.firstName }),
-        ...(values.lastName && { lastname: values.lastName }),
-        ...(values.embg && { embg: values.embg }),
-        ...(values.dateOfBirth && { birthDate: dotDateToIso(values.dateOfBirth) }),
-        ...(values.address && { address: values.address }),
-        ...(extractedFields.idNumber && { cardId: extractedFields.idNumber }),
-        ...(extractedFields.issueDate && { cardIssueDate: dotDateToIso(extractedFields.issueDate) }),
-        ...(extractedFields.expiryDate && { cardExpiryDate: dotDateToIso(extractedFields.expiryDate) }),
-        ...(extractedFields.nationality && { nationality: extractedFields.nationality }),
-        ...(extractedFields.gender && { gender: extractedFields.gender }),
+      await apiSaveUserIdentityDocument({
+        documentType,
+        documentNumber: values.idNumber,
+        issueDate: values.issueDate ? dotDateToIso(values.issueDate) : null,
+        expiryDate: values.expiryDate ? dotDateToIso(values.expiryDate) : null,
       })
-      await refreshUser()
-      router.push("/citizen/profile")
-    } catch {
-      setSaveError("Неуспешно зачувување на податоците. Обидете се повторно.")
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : ""
+      if (msg.includes("тип")) {
+        const docs = await apiGetUserIdentityDocuments().catch(() => [])
+        const found = docs.find((d) => d.documentType === documentType) ?? null
+        setExistingDoc(found)
+        setPendingValues(values)
+        setReplaceDialog(true)
+        setSaving(false)
+        return
+      }
+      setSaveError(msg || "Неуспешно зачувување на документот.")
+      setSaving(false)
+      return
+    }
+
+    try {
+      await saveUserData(values)
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Неуспешно зачувување на податоците.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleReplace = async () => {
+    if (!existingDoc || !pendingValues) return
+    setReplaceDialog(false)
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await apiDeleteUserIdentityDocument(existingDoc.id)
+      await apiSaveUserIdentityDocument({
+        documentType,
+        documentNumber: pendingValues.idNumber,
+        issueDate: pendingValues.issueDate ? dotDateToIso(pendingValues.issueDate) : null,
+        expiryDate: pendingValues.expiryDate ? dotDateToIso(pendingValues.expiryDate) : null,
+      })
+      await saveUserData(pendingValues)
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Неуспешно замена на документот.")
     } finally {
       setSaving(false)
     }
   }
 
   return (
+    <>
     <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Скенирање личен документ</h1>
 
@@ -173,6 +246,20 @@ export default function ScanIdPage() {
           </CardHeader>
 
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Тип на документ</Label>
+              <Select value={documentType} onValueChange={(v) => setDocumentType(v as DocumentType)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ID_CARD">Лична карта</SelectItem>
+                  <SelectItem value="PASSPORT">Пасош</SelectItem>
+                  <SelectItem value="DRIVING_LICENSE">Возачка дозвола</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleFileDrop}
@@ -299,6 +386,46 @@ export default function ScanIdPage() {
                   <p className="text-sm text-destructive">{form.formState.errors.address.message}</p>
                 )}
               </div>
+
+              <div className="sm:col-span-2">
+                <p className="text-sm font-medium text-muted-foreground mb-3 mt-2">Податоци за документот</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Број на документ</Label>
+                <Input {...form.register("idNumber")} />
+                {form.formState.errors.idNumber && (
+                  <p className="text-sm text-destructive">{form.formState.errors.idNumber.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Датум на издавање</Label>
+                <Controller
+                  control={form.control}
+                  name="issueDate"
+                  render={({ field }) => (
+                    <DatePickerField value={field.value} onChange={field.onChange} placeholder={user?.cardIssueDate ?? ""} />
+                  )}
+                />
+                {form.formState.errors.issueDate && (
+                  <p className="text-sm text-destructive">{form.formState.errors.issueDate.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Датум на истекување</Label>
+                <Controller
+                  control={form.control}
+                  name="expiryDate"
+                  render={({ field }) => (
+                    <DatePickerField value={field.value} onChange={field.onChange} placeholder={user?.cardExpiryDate ?? ""} />
+                  )}
+                />
+                {form.formState.errors.expiryDate && (
+                  <p className="text-sm text-destructive">{form.formState.errors.expiryDate.message}</p>
+                )}
+              </div>
             </CardContent>
           </Card>
 
@@ -310,7 +437,7 @@ export default function ScanIdPage() {
           )}
 
           <div className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => setStep("upload")}>
+            <Button type="button" variant="outline" onClick={() => { setStep("upload"); setSaveError(null) }}>
               Назад
             </Button>
             <Button type="submit" className="gap-2" disabled={saving}>
@@ -325,5 +452,22 @@ export default function ScanIdPage() {
         </form>
       )}
     </div>
+
+    <AlertDialog open={replaceDialog} onOpenChange={setReplaceDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Замени постоечки документ?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Веќе имате зачуван документ од овој тип. Дали сакате да го замените со новиот?
+            Стариот документ ќе биде трајно избришан.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Откажи</AlertDialogCancel>
+          <AlertDialogAction onClick={handleReplace}>Замени</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }
