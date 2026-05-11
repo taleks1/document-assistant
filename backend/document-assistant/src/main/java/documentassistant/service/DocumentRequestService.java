@@ -81,7 +81,7 @@ public class DocumentRequestService {
     }
 
     @Transactional
-    public Page<DocumentRequest> getRequestsByUserId(Integer userId, Pageable pageable) {
+    public Page<DocumentRequestResponse> getRequestsByUserId(Integer userId, Pageable pageable) {
 
         userService.getUserById(userId);
 
@@ -91,6 +91,6 @@ public class DocumentRequestService {
             throw new NoDocumentRequestsFoundException("No requests for the selected user found");
         }
 
-        return requests;
+        return requests.map(DocumentRequestResponse::from);
     }
 }

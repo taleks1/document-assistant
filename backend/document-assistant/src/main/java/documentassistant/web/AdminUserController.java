@@ -42,9 +42,7 @@ public class AdminUserController {
             @RequestParam(defaultValue = "10") int size
     ) {
         return ResponseEntity.ok(
-                documentRequestService
-                        .getRequestsByUserId(id, PageRequest.of(page, size))
-                        .map(DocumentRequestResponse::from)
+                documentRequestService.getRequestsByUserId(id, PageRequest.of(page, size))
         );
     }
 }
