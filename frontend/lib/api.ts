@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:8080"
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -164,4 +164,70 @@ export async function apiGetAdminUserById(id: number | string): Promise<User> {
     headers: authHeaders(),
   })
   return handleResponse<User>(res)
+}
+
+// ─── OCR endpoints ────────────────────────────────────────────────────────────
+
+export interface OcrResponse {
+  rawText: string
+  parsed: {
+    fields_en: Record<string, string>
+    fields_mk: Record<string, string>
+  }
+}
+
+export async function apiOcrUpload(file: File): Promise<OcrResponse> {
+  const formData = new FormData()
+  formData.append("file", file)
+  const token = getToken()
+  const res = await fetch(`${BASE_URL}/api/ocr/upload`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  })
+  return handleResponse<OcrResponse>(res)
+}
+
+// ─── Document request endpoints ───────────────────────────────────────────────
+
+export interface CreateRequestPayload {
+  type: string
+  title: string
+  description: string
+  notes?: string | null
+}
+
+export interface DocumentRequestResponse {
+  id: number
+  referenceNumber: string
+  type: string
+  title: string
+  description: string
+  status: string
+}
+
+export async function apiCreateRequest(
+  payload: CreateRequestPayload
+): Promise<DocumentRequestResponse> {
+  const res = await fetch(`${BASE_URL}/api/requests`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  })
+  return handleResponse<DocumentRequestResponse>(res)
+}
+
+export async function apiUploadRequestFiles(
+  requestId: number,
+  files: File[]
+): Promise<void> {
+  const formData = new FormData()
+  files.forEach((f) => formData.append("files", f))
+  const token = getToken()
+  const res = await fetch(`${BASE_URL}/api/requests/${requestId}/files`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  })
+  return handleResponse<void>(res)
 }

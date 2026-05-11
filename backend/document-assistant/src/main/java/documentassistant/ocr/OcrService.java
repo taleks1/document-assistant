@@ -18,12 +18,13 @@ public class OcrService {
     private String language;
 
     public String extractTextFromImage(String imagePath) throws TesseractException {
+        return extractTextFromFile(new File(imagePath));
+    }
 
+    public String extractTextFromFile(File file) throws TesseractException {
         ITesseract tesseract = new Tesseract();
-
         tesseract.setDatapath(datapath);
         tesseract.setLanguage(language);
-
-        return tesseract.doOCR(new File(imagePath));
+        return tesseract.doOCR(file);
     }
 }
