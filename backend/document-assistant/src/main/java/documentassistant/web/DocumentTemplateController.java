@@ -1,6 +1,7 @@
 package documentassistant.web;
 
 import documentassistant.model.entity.DocumentTemplate;
+import documentassistant.model.enums.DocumentRequestType;
 import documentassistant.payload.CreateDocumentTemplateRequest;
 import documentassistant.payload.DocumentTemplateResponse;
 import documentassistant.service.DocumentTemplateService;
@@ -19,9 +20,15 @@ public class DocumentTemplateController {
     private final DocumentTemplateService service;
 
     @GetMapping("/{id}")
-    public ResponseEntity<DocumentTemplateResponse> getByType(
+    public ResponseEntity<DocumentTemplateResponse> getById(
             @PathVariable Long id) {
         return ResponseEntity.ok(DocumentTemplateResponse.from(service.getActiveTemplate(id)));
+    }
+
+    @GetMapping("/type/{type}")
+    public ResponseEntity<DocumentTemplateResponse> getByType(
+            @PathVariable DocumentRequestType type) {
+        return ResponseEntity.ok(DocumentTemplateResponse.from(service.getByType(type)));
     }
 
     @PostMapping

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import documentassistant.exception.ResourceNotFoundException;
 import documentassistant.model.entity.DocumentTemplate;
+import documentassistant.model.enums.DocumentRequestType;
 import documentassistant.payload.CreateDocumentTemplateRequest;
 import documentassistant.payload.DocumentTemplateResponse;
 import documentassistant.repository.DocumentTemplateRepository;
@@ -45,5 +46,9 @@ public class DocumentTemplateService {
 
         return DocumentTemplateResponse.from(
                 repository.save(template));
+    }
+
+    public DocumentTemplate getByType(DocumentRequestType type) {
+        return repository.findByType(type).orElseThrow(() -> new ResourceNotFoundException("Template not found"));
     }
 }
