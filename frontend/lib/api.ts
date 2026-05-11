@@ -194,7 +194,7 @@ export interface CreateRequestPayload {
   type: string
   title: string
   description: string
-  notes?: string | null
+  notes: string | null
 }
 
 export interface DocumentRequestResponse {
@@ -232,9 +232,9 @@ export interface UserIdentityDocumentResponse {
 
 export interface SaveUserIdentityDocumentRequest {
   documentType: DocumentType
-  documentNumber?: string | null
-  issueDate?: string | null
-  expiryDate?: string | null
+  documentNumber: string | null
+  issueDate: string | null
+  expiryDate: string | null
 }
 
 export async function apiGetUserIdentityDocuments(): Promise<UserIdentityDocumentResponse[]> {
