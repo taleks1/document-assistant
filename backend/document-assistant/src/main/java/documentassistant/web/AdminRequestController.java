@@ -9,8 +9,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/admin/requests")
 @RequiredArgsConstructor
@@ -31,7 +29,7 @@ public class AdminRequestController {
         return ResponseEntity.ok(adminRequestService.getById(id));
     }
 
-    @PutMapping("/accept/{id}")
+    @PutMapping("/{id}/accept")
     public ResponseEntity<DocumentRequestResponse> accept(@PathVariable Long id) {
         return ResponseEntity.ok(adminRequestService.accept(id));
     }
@@ -42,5 +40,13 @@ public class AdminRequestController {
             @RequestBody RejectRequest request
     ) {
         return ResponseEntity.ok(adminRequestService.reject(id, request.getReason()));
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<DocumentRequestResponse> updateStatus(
+            @PathVariable Long id,
+            @RequestBody documentassistant.payload.UpdateStatusRequest request
+    ) {
+        return ResponseEntity.ok(adminRequestService.updateStatus(id, request.getStatus()));
     }
 }

@@ -1,6 +1,5 @@
 package documentassistant.model.entity;
 
-import documentassistant.model.entity.User;
 import documentassistant.model.enums.DocumentRequestStatus;
 import documentassistant.model.enums.DocumentRequestType;
 import jakarta.persistence.Column;
@@ -10,6 +9,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -62,6 +63,11 @@ public class DocumentRequest {
     // Filled later when an admin rejects a request. Not touched on create.
     @Column(length = 2000)
     private String rejectionReason;
+
+    @ElementCollection
+    @CollectionTable(name = "document_request_status_history", joinColumns = @jakarta.persistence.JoinColumn(name = "request_id"))
+    @Builder.Default
+    private java.util.List<StatusHistory> statusHistory = new java.util.ArrayList<>();
 
     @Column(nullable = false)
     private Instant createdAt;

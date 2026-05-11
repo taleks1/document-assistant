@@ -19,8 +19,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Upload, FileText, Loader2, CheckCircle, X, Brain } from "lucide-react"
-import { mockRequests } from "@/lib/mock-data"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Upload, FileText, Loader2, CheckCircle, X, Brain, AlertCircle, CalendarIcon } from "lucide-react"
+import { format, parse, isValid } from "date-fns"
+import { apiOcrUpload, apiCreateRequest, apiUploadRequestFiles } from "@/lib/api"
 
 const requestTypeLabels: Record<string, string> = {
   request: "Барање",
@@ -39,9 +42,9 @@ const newRequestSchema = z.object({
   lastName: z.string().trim().min(2, "Презимето мора да има најмалку 2 карактери."),
   idNumber: z.string().trim().min(3, "Внеси валиден број на личен документ."),
   address: z.string().trim().min(5, "Адресата мора да има најмалку 5 карактери."),
-  dateOfBirth: z.string().min(1, "Датумот на раѓање е задолжителен."),
+  dateOfBirth: z.string().regex(/^\d{2}\.\d{2}\.\d{4}$/, "Внеси датум во формат ДД.ММ.ГГГГ (пр. 18.08.1979)."),
   embg: z.string().trim().regex(/^\d{13}$/, "ЕМБГ мора да содржи точно 13 цифри."),
-  documentExpiryDate: z.string().min(1, "Важноста на документот е задолжителна."),
+  documentExpiryDate: z.string().regex(/^\d{2}\.\d{2}\.\d{4}$/, "Внеси датум во формат ДД.ММ.ГГГГ (пр. 19.06.2025)."),
   requestType: z.string().min(1, "Избери тип на барање."),
   requestTitle: z.string().trim().min(3, "Насловот мора да има најмалку 3 карактери."),
   description: z.string().trim().min(10, "Описот мора да има најмалку 10 карактери."),
@@ -50,15 +53,50 @@ const newRequestSchema = z.object({
 
 type NewRequestFormValues = z.infer<typeof newRequestSchema>
 
+function DatePickerField({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const parsed = value ? parse(value, "dd.MM.yyyy", new Date()) : undefined
+  const selected = parsed && isValid(parsed) ? parsed : undefined
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 flex h-9 w-full items-center rounded-md border bg-transparent px-3 py-1 text-left text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:ring-[3px]"
+        >
+          <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+          {value || ""}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={selected}
+          onSelect={(date) => {
+            if (date) {
+              onChange(format(date, "dd.MM.yyyy"))
+              setOpen(false)
+            }
+          }}
+        />
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 export default function NewRequestPage() {
   const router = useRouter()
 
   const [step, setStep] = useState<"upload" | "form" | "preview">("upload")
   const [isExtracting, setIsExtracting] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([])
+  const [ocrUsed, setOcrUsed] = useState(false)
+  const [ocrError, setOcrError] = useState<string | null>(null)
   const [submittedData, setSubmittedData] = useState<NewRequestFormValues | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const form = useForm<NewRequestFormValues>({
     resolver: zodResolver(newRequestSchema),
@@ -80,104 +118,91 @@ export default function NewRequestPage() {
 
   const handleFileDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
-    const file = e.dataTransfer.files[0]
-
-    if (file && (file.type.includes("image") || file.type === "application/pdf")) {
-      setUploadedFile(file)
+    const dropped = Array.from(e.dataTransfer.files).filter(
+      (f) => f.type.includes("image") || f.type === "application/pdf"
+    )
+    if (dropped.length > 0) {
+      setUploadedFiles((prev) => [...prev, ...dropped])
+      setOcrError(null)
     }
   }, [])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-
-    if (file) {
-      setUploadedFile(file)
+    const selected = Array.from(e.target.files || [])
+    if (selected.length > 0) {
+      setUploadedFiles((prev) => [...prev, ...selected])
+      setOcrError(null)
+      e.target.value = ""
     }
   }, [])
 
   const handleExtract = async () => {
-    if (!uploadedFile) return
+    if (uploadedFiles.length === 0) return
 
     setIsExtracting(true)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    setOcrError(null)
 
-    const userRequest = mockRequests.find((r) => r.userId === "1")
+    try {
+      const data = await apiOcrUpload(uploadedFiles)
+      const fields_en = data?.parsed?.fields_en ?? {}
+      const fields_mk = data?.parsed?.fields_mk ?? {}
+      const fields = { ...fields_en, ...fields_mk }
+      const hasData = !!(fields.name || fields.surname || fields.idNumber || fields.embg)
 
-    form.reset({
-      firstName: userRequest?.extractedData?.firstName ?? "",
-      lastName: userRequest?.extractedData?.lastName ?? "",
-      idNumber: userRequest?.extractedData?.idNumber ?? "",
-      address: userRequest?.extractedData?.address ?? "",
-      dateOfBirth: userRequest?.extractedData?.dateOfBirth ?? "",
-      embg: userRequest?.extractedData?.embg ?? "",
-      documentExpiryDate: userRequest?.extractedData?.documentExpiryDate ?? "",
-      requestType: userRequest?.type ?? "request",
-      requestTitle: userRequest?.title ?? "",
-      description: userRequest?.description ?? "",
-      notes: userRequest?.notes ?? "",
-    })
+      if (!hasData) {
+        setOcrError("AI не успеа да извлече податоци од документот. Обидете се со подобра слика или прескокнете.")
+        return
+      }
 
-    setIsExtracting(false)
-    setStep("form")
+      form.reset({
+        firstName: fields.name ?? "",
+        lastName: fields.surname ?? "",
+        idNumber: fields.idNumber ?? "",
+        address: fields.address ?? "",
+        dateOfBirth: fields.birthDate ?? "",
+        embg: String(fields.embg ?? ""),
+        documentExpiryDate: fields.expiryDate ?? "",
+        requestType: "request",
+        requestTitle: "",
+        description: "",
+        notes: "",
+      })
+
+      setOcrUsed(true)
+      setStep("form")
+    } catch {
+      setOcrError("Неуспешно извлекување на податоци. Обидете се повторно или прескокнете.")
+    } finally {
+      setIsExtracting(false)
+    }
   }
 
   const onFormSubmit = (values: NewRequestFormValues) => {
     setSubmittedData(values)
     setStep("preview")
-    console.log(values)
   }
 
   const handleSubmitFinal = async () => {
     if (!submittedData) return
 
     setIsSubmitting(true)
+    setSubmitError(null)
 
     try {
-      const newRequest = {
-        id: `REQ-${Date.now()}`,
-        userId: "1",
-        type: submittedData.requestType,
+      const created = await apiCreateRequest({
+        type: submittedData.requestType.toUpperCase(),
         title: submittedData.requestTitle,
         description: submittedData.description,
-        notes: submittedData.notes ?? "",
-        status: "sent",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        extractedData: {
-          firstName: submittedData.firstName,
-          lastName: submittedData.lastName,
-          idNumber: submittedData.idNumber,
-          address: submittedData.address,
-          dateOfBirth: submittedData.dateOfBirth,
-          embg: submittedData.embg,
-          documentExpiryDate: submittedData.documentExpiryDate,
-        },
-        attachments: [
-          ...(uploadedFile ? [uploadedFile.name] : []),
-          ...additionalFiles.map((file) => file.name),
-        ],
-        statusHistory: [
-          {
-            status: "sent",
-            date: new Date().toISOString(),
-            note: "Барањето е успешно поднесено.",
-          },
-        ],
+        notes: submittedData.notes || null,
+      })
+
+      if (additionalFiles.length > 0) {
+        await apiUploadRequestFiles(created.id, additionalFiles)
       }
 
-      console.log("FINAL SUBMIT:", newRequest)
-
-      // Тука подоцна ќе ставиш backend/API повик
-      // await fetch("/api/requests", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(newRequest),
-      // })
-
-      await new Promise((resolve) => setTimeout(resolve, 1000))
       router.push("/citizen/requests")
-    } catch (error) {
-      console.error("Грешка при поднесување:", error)
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Грешка при поднесување.")
     } finally {
       setIsSubmitting(false)
     }
@@ -286,80 +311,99 @@ export default function NewRequestPage() {
               <div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleFileDrop}
-                className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors ${
-                  uploadedFile
-                    ? "border-green-600 bg-green-50"
-                    : "border-border hover:border-primary/50 hover:bg-muted/50"
-                }`}
+                className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-colors hover:border-primary/50 hover:bg-muted/50"
               >
-                {uploadedFile ? (
-                  <>
-                    <CheckCircle className="mb-4 h-12 w-12 text-green-600" />
-                    <p className="mb-2 font-medium text-foreground">{uploadedFile.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="mt-4"
-                      onClick={() => setUploadedFile(null)}
-                    >
-                      Отстрани и прикачи друг документ
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mb-4 h-12 w-12 text-muted-foreground" />
-                    <p className="mb-2 font-medium text-foreground">
-                      Повлечете и пуштете го вашиот документ
-                    </p>
-                    <p className="mb-4 text-sm text-muted-foreground">
-                      или кликнете за избор на датотека
-                    </p>
-
-                    <label htmlFor="file-upload">
-                      <Button type="button" variant="outline" asChild>
-                        <span>Избери датотека</span>
-                      </Button>
-                      <input
-                        id="file-upload"
-                        type="file"
-                        accept="image/*,.pdf"
-                        className="hidden"
-                        onChange={handleFileSelect}
-                      />
-                    </label>
-
-                    <p className="mt-4 text-xs text-muted-foreground">
-                      Поддржани формати: JPG, PNG, PDF (макс. 10MB)
-                    </p>
-                  </>
-                )}
+                <Upload className="mb-4 h-12 w-12 text-muted-foreground" />
+                <p className="mb-2 font-medium text-foreground">
+                  Повлечете и пуштете документи овде
+                </p>
+                <label htmlFor="file-upload">
+                  <Button type="button" variant="outline" asChild>
+                    <span>Избери датотеки</span>
+                  </Button>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept="image/*,.pdf"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                </label>
+                <p className="mt-4 text-xs text-muted-foreground">
+                  Поддржани формати: JPG, PNG, PDF (макс. 10MB)
+                </p>
               </div>
 
-              {uploadedFile && (
+              {uploadedFiles.length > 0 && (
+                <div className="space-y-2">
+                  {uploadedFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-2"
+                    >
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="h-4 w-4 shrink-0 text-green-600" />
+                        <span className="text-sm font-medium">{file.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => {
+                          setUploadedFiles((prev) => prev.filter((_, i) => i !== index))
+                          setOcrError(null)
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {ocrError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{ocrError}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex flex-col gap-2">
+                {uploadedFiles.length > 0 && (
+                  <Button
+                    type="button"
+                    className="w-full gap-2"
+                    onClick={handleExtract}
+                    disabled={isExtracting}
+                  >
+                    {isExtracting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Се извлекуваат податоци...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="h-4 w-4" />
+                        Извлечи информации со AI
+                      </>
+                    )}
+                  </Button>
+                )}
                 <Button
                   type="button"
-                  className="w-full gap-2"
-                  onClick={handleExtract}
+                  variant="ghost"
+                  className="w-full text-muted-foreground"
+                  onClick={() => setStep("form")}
                   disabled={isExtracting}
                 >
-                  {isExtracting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Се извлекуваат податоци...
-                    </>
-                  ) : (
-                    <>
-                      <Brain className="h-4 w-4" />
-                      Извлечи информации со AI
-                    </>
-                  )}
+                  Прескокни и пополни рачно
                 </Button>
-              )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -367,20 +411,15 @@ export default function NewRequestPage() {
 
       {step === "form" && (
         <form onSubmit={form.handleSubmit(onFormSubmit)} className="mx-auto max-w-3xl space-y-6">
-          <Alert className="border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-700">
-              Податоците се успешно извлечени од вашиот документ. Проверете ги и изменете ако е
-              потребно.
-            </AlertDescription>
-          </Alert>
 
           <Card className="border-none bg-white shadow-none">
             <CardHeader>
-              <CardTitle>Извлечени информации</CardTitle>
-              <CardDescription>
-                Проверете ги и изменете ги AI-извлечените податоци од вашиот документ
-              </CardDescription>
+              <CardTitle>Лични податоци</CardTitle>
+              {ocrUsed && (
+                <CardDescription>
+                  Проверете ги и изменете ги податоците ако не се правилни
+                </CardDescription>
+              )}
             </CardHeader>
 
             <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -421,10 +460,14 @@ export default function NewRequestPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="dateOfBirth">
-                  Датум на раѓање <span className="text-red-500">*</span>
-                </Label>
-                <Input id="dateOfBirth" type="date" {...form.register("dateOfBirth")} />
+                <Label>Датум на раѓање <span className="text-red-500">*</span></Label>
+                <Controller
+                  control={form.control}
+                  name="dateOfBirth"
+                  render={({ field }) => (
+                    <DatePickerField value={field.value} onChange={field.onChange} />
+                  )}
+                />
                 {form.formState.errors.dateOfBirth && (
                   <p className="text-sm text-destructive">
                     {form.formState.errors.dateOfBirth.message}
@@ -443,13 +486,13 @@ export default function NewRequestPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="documentExpiryDate">
-                  Важност на документот <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="documentExpiryDate"
-                  type="date"
-                  {...form.register("documentExpiryDate")}
+                <Label>Важност на документот <span className="text-red-500">*</span></Label>
+                <Controller
+                  control={form.control}
+                  name="documentExpiryDate"
+                  render={({ field }) => (
+                    <DatePickerField value={field.value} onChange={field.onChange} />
+                  )}
                 />
                 {form.formState.errors.documentExpiryDate && (
                   <p className="text-sm text-destructive">
@@ -724,6 +767,13 @@ export default function NewRequestPage() {
               </div>
             </CardContent>
           </Card>
+
+          {submitError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          )}
 
           <div className="flex justify-between">
             <Button type="button" variant="outline" onClick={() => setStep("form")}>
