@@ -30,7 +30,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public void run(String @NonNull ... args) {
+    public void run(String @NonNull ... args){
 
         if (userRepository.count() > 0) {
             System.out.println("Database already seeded.");
@@ -112,7 +112,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         userRepository.saveAll(users);
     }
 
-    private void seedTemplates() {
+    private void seedTemplates(){
 
         List<DocumentTemplate> templates = List.of(
 

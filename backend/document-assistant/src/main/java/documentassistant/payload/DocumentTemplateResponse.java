@@ -1,6 +1,7 @@
 package documentassistant.payload;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
 import documentassistant.model.entity.DocumentTemplate;
 import documentassistant.model.enums.DocumentRequestType;
 import lombok.Builder;
