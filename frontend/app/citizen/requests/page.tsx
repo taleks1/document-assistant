@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 
 import { Separator } from "@/components/ui/separator"
@@ -23,31 +23,34 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { StatusBadge } from "@/components/status-badge"
-import { mockRequests, type RequestStatus, type RequestType } from "@/lib/mock-data"
+import {
+  apiGetCurrentUser,
+  apiGetRequestsForUser,
+  DocumentRequestFullResponse,
+  DocumentRequestStatus,
+  DocumentRequestType,
+  DocumentRequestTypeLabel,
+} from "@/lib/api"
 import { Search, Eye, Download, Plus, Filter } from "lucide-react"
 
-const requestTypeLabels: Record<string, string> = {
-  request: "Барање",
-  permit: "Дозвола",
-  complaint: "Жалба",
-  application: "Апликација",
-  certificate: "Потврда",
-  objection: "Приговор",
-  statement: "Изјава",
-  report: "Пријава",
-  other: "Друго",
-}
-
 export default function MyRequestsPage() {
+  const [requests, setRequests] = useState<DocumentRequestFullResponse[]>([])
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<RequestStatus | "all">("all")
-  const [typeFilter, setTypeFilter] = useState<RequestType | "all">("all")
+  const [statusFilter, setStatusFilter] = useState<DocumentRequestStatus | "all">("all")
+  const [typeFilter, setTypeFilter] = useState<DocumentRequestType | "all">("all")
 
-  const userRequests = mockRequests.filter((r) => r.userId === "1")
+  useEffect(() => {
+    async function fetchRequests() {
+      const user = await apiGetCurrentUser()
+      const page = await apiGetRequestsForUser(user.id, 0, 100)
+      setRequests(page.content)
+    }
+    fetchRequests()
+  }, [])
 
-  const filteredRequests = userRequests.filter((request) => {
+  const filteredRequests = requests.filter((request) => {
     const matchesSearch =
-      request.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      request.referenceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       request.title.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesStatus = statusFilter === "all" || request.status === statusFilter
@@ -75,8 +78,8 @@ export default function MyRequestsPage() {
       </div>
       <Separator />
 
-<Card className="border-none shadow-none bg-transparent">     
-     <CardHeader>
+      <Card className="border-none shadow-none bg-transparent">
+        <CardHeader>
           <CardTitle>Сите барања</CardTitle>
           <CardDescription>
             {filteredRequests.length} барањ{filteredRequests.length !== 1 ? "а" : "е"} пронајдени
@@ -98,7 +101,7 @@ export default function MyRequestsPage() {
             <div className="flex gap-4">
               <Select
                 value={statusFilter}
-                onValueChange={(v: string) => setStatusFilter(v as RequestStatus | "all")}
+                onValueChange={(v: string) => setStatusFilter(v as DocumentRequestStatus | "all")}
               >
                 <SelectTrigger className="w-[170px]">
                   <Filter className="mr-2 h-4 w-4" />
@@ -106,152 +109,145 @@ export default function MyRequestsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Сите статуси</SelectItem>
-                  <SelectItem value="sent">Поднесено</SelectItem>
-                  <SelectItem value="processing">Во обработка</SelectItem>
-                  <SelectItem value="reviewed">Разгледано</SelectItem>
-                  <SelectItem value="approved">Одобрено</SelectItem>
-                  <SelectItem value="rejected">Одбиено</SelectItem>
+                  <SelectItem value="SUBMITTED">Поднесено</SelectItem>
+                  <SelectItem value="IN_REVIEW">Во обработка</SelectItem>
+                  <SelectItem value="REVIEWED">Разгледано</SelectItem>
+                  <SelectItem value="APPROVED">Одобрено</SelectItem>
+                  <SelectItem value="REJECTED">Одбиено</SelectItem>
                 </SelectContent>
               </Select>
 
               <Select
                 value={typeFilter}
-                onValueChange={(v: string) => setTypeFilter(v as RequestType | "all")}
+                onValueChange={(v: string) => setTypeFilter(v as DocumentRequestType | "all")}
               >
                 <SelectTrigger className="w-[220px]">
                   <SelectValue placeholder="Тип" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Сите типови</SelectItem>
-                  <SelectItem value="request">Барање</SelectItem>
-                  <SelectItem value="permit">Дозвола</SelectItem>
-                  <SelectItem value="complaint">Жалба</SelectItem>
-                  <SelectItem value="application">Апликација</SelectItem>
-                  <SelectItem value="certificate">Потврда</SelectItem>
-                  <SelectItem value="objection">Приговор</SelectItem>
-                  <SelectItem value="statement">Изјава</SelectItem>
-                  <SelectItem value="report">Пријава</SelectItem>
-                  <SelectItem value="other">Друго</SelectItem>
+                  {(Object.entries(DocumentRequestTypeLabel) as [DocumentRequestType, string][]).map(
+                    ([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    )
+                  )}
                 </SelectContent>
               </Select>
             </div>
           </div>
- <div className="overflow-x-auto rounded-[22px] bg-card p-3 shadow-sm">
-  <Table className="min-w-[1000px] border-separate border-spacing-y-2 text-sm">
-    <TableHeader>
-      <TableRow className="overflow-hidden border-0 bg-transparent hover:bg-transparent">
-        <TableHead className="rounded-l-[16px] bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
-          ID на барање
-        </TableHead>
 
-        <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
-          Тип
-        </TableHead>
+          <div className="overflow-x-auto rounded-[22px] bg-card p-3 shadow-sm">
+            <Table className="min-w-[1000px] border-separate border-spacing-y-2 text-sm">
+              <TableHeader>
+                <TableRow className="overflow-hidden border-0 bg-transparent hover:bg-transparent">
+                  <TableHead className="rounded-l-[16px] bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+                    ID на барање
+                  </TableHead>
+                  <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+                    Тип
+                  </TableHead>
+                  <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+                    Наслов
+                  </TableHead>
+                  <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+                    Поднесено
+                  </TableHead>
+                  <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+                    Последно ажурирање
+                  </TableHead>
+                  <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+                    Статус
+                  </TableHead>
+                  <TableHead className="rounded-r-[16px] bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+                    Акции
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
 
-        <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
-          Наслов
-        </TableHead>
+              <TableBody>
+                {filteredRequests.length === 0 ? (
+                  <TableRow className="border-0 hover:bg-transparent">
+                    <TableCell
+                      colSpan={7}
+                      className="h-24 rounded-[14px] bg-white align-middle text-center text-muted-foreground shadow-sm"
+                    >
+                      Нема пронајдени барања според избраните критериуми
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredRequests.map((request) => (
+                    <TableRow
+                      key={request.id}
+                      className="overflow-hidden border-0 bg-transparent hover:bg-transparent"
+                    >
+                      <TableCell className="rounded-l-[14px] border border-r-0 border-border bg-white px-3 py-3 text-center align-middle font-medium text-slate-700 shadow-sm">
+                        {request.referenceNumber}
+                      </TableCell>
 
-        <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
-          Поднесено
-        </TableHead>
+                      <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
+                        {DocumentRequestTypeLabel[request.type] ?? request.type}
+                      </TableCell>
 
-        <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
-          Последно ажурирање
-        </TableHead>
+                      <TableCell className="max-w-[160px] truncate border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
+                        {request.title}
+                      </TableCell>
 
-        <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
-          Статус
-        </TableHead>
+                      <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
+                        {new Date(request.createdAt).toLocaleDateString()}
+                      </TableCell>
 
-        <TableHead className="rounded-r-[16px] bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
-          Акции
-        </TableHead>
-      </TableRow>
-    </TableHeader>
+                      <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
+                        {new Date(request.updatedAt).toLocaleDateString()}
+                      </TableCell>
 
-    <TableBody>
-      {filteredRequests.length === 0 ? (
-        <TableRow className="border-0 hover:bg-transparent">
-          <TableCell
-            colSpan={7}
-            className="h-24 rounded-[14px] bg-white align-middle text-center text-muted-foreground shadow-sm"
-          >
-            Нема пронајдени барања според избраните критериуми
-          </TableCell>
-        </TableRow>
-      ) : (
-        filteredRequests.map((request) => (
-          <TableRow
-            key={request.id}
-            className="overflow-hidden border-0 bg-transparent hover:bg-transparent"
-          >
-            <TableCell className="rounded-l-[14px] border border-r-0 border-border bg-white px-3 py-3 text-center align-middle font-medium text-slate-700 shadow-sm">
-              {request.id}
-            </TableCell>
+                      <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle shadow-sm">
+                        <div className="flex justify-center">
+                          <StatusBadge status={request.status} />
+                        </div>
+                      </TableCell>
 
-            <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
-              {requestTypeLabels[request.type] || request.type}
-            </TableCell>
+                      <TableCell className="rounded-r-[14px] border border-l-0 border-border bg-white px-3 py-3 text-center align-middle shadow-sm">
+                        <div className="flex items-center justify-center gap-2">
+                          <Link href={`/citizen/requests/${request.id}`}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full"
+                              title="Прегледај"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
 
-            <TableCell className="max-w-[160px] truncate border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
-              {request.title}
-            </TableCell>
+                          <Link href={`/citizen/tracking?id=${request.id}`}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full"
+                              title="Следи"
+                            >
+                              <Search className="h-4 w-4" />
+                            </Button>
+                          </Link>
 
-            <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
-              {new Date(request.createdAt).toLocaleDateString()}
-            </TableCell>
-
-            <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
-              {new Date(request.updatedAt).toLocaleDateString()}
-            </TableCell>
-
-            <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle shadow-sm">
-              <div className="flex justify-center">
-                <StatusBadge status={request.status} />
-              </div>
-            </TableCell>
-
-            <TableCell className="rounded-r-[14px] border border-l-0 border-border bg-white px-3 py-3 text-center align-middle shadow-sm">
-              <div className="flex items-center justify-center gap-2">
-                <Link href={`/citizen/requests/${request.id}`}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full"
-                    title="Прегледај"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </Link>
-
-                <Link href={`/citizen/tracking?id=${request.id}`}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full"
-                    title="Следи"
-                  >
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </Link>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full"
-                  title="Преземи"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))
-      )}
-    </TableBody>
-  </Table>
-</div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full"
+                            title="Преземи"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

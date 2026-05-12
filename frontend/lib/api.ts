@@ -291,6 +291,26 @@ export async function apiCreateRequest(
   return handleResponse<DocumentRequestResponse>(res)
 }
 
+export async function apiGetRequestById(id: number): Promise<DocumentRequestFullResponse> {
+  const res = await fetch(`${BASE_URL}/api/requests/${id}`, {
+    method: "GET",
+    headers: authHeaders(),
+  })
+  return handleResponse<DocumentRequestFullResponse>(res)
+}
+
+export async function apiGetRequestsForUser(
+  userId: number,
+  page: number,
+  size: number
+): Promise<Page<DocumentRequestFullResponse>> {
+  const res = await fetch(
+    `${BASE_URL}/api/requests/user/${userId}?page=${page}&size=${size}`,
+    { method: "GET", headers: authHeaders() }
+  )
+  return handleResponse<Page<DocumentRequestFullResponse>>(res)
+}
+
 // ─── Admin request endpoints ──────────────────────────────────────────────────
 
 export async function apiAdminGetAllRequests(

@@ -1,49 +1,34 @@
 "use client"
 
-import { use } from "react"
+import { use, useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusBadge } from "@/components/status-badge"
-import { mockRequests, mockDocuments } from "@/lib/mock-data"
+import {
+  apiGetRequestById,
+  DocumentRequestFullResponse,
+  DocumentRequestTypeLabel,
+  DocumentRequestStatusLabel,
+} from "@/lib/api"
 import {
   ArrowLeft,
   Download,
   FileText,
   Calendar,
-  User,
-  MapPin,
-  CreditCard,
   Clock,
   CheckCircle,
   XCircle,
   AlertCircle,
 } from "lucide-react"
 
-const requestTypeLabels: Record<string, string> = {
-  request: "Барање",
-  permit: "Дозвола",
-  complaint: "Жалба",
-  application: "Апликација",
-  certificate: "Потврда",
-  objection: "Приговор",
-  statement: "Изјава",
-  report: "Пријава",
-  other: "Друго",
-}
-
-const statusLabels: Record<string, string> = {
-  sent: "Поднесено",
-  processing: "Во обработка",
-  reviewed: "Разгледано",
-  approved: "Одобрено",
-  rejected: "Одбиено",
-}
-
 export default function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const request = mockRequests.find((r) => r.id === id)
-  const documents = mockDocuments.filter((d) => d.requestId === id)
+  const [request, setRequest] = useState<DocumentRequestFullResponse | null>(null)
+
+  useEffect(() => {
+    apiGetRequestById(Number(id)).then(setRequest)
+  }, [id])
 
   if (!request) {
     return (
@@ -73,7 +58,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground">{request.id}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{request.referenceNumber}</h1>
               <StatusBadge status={request.status} />
             </div>
             <p className="mt-1 text-muted-foreground">{request.title}</p>
@@ -114,7 +99,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     <div>
                       <p className="text-sm font-medium text-foreground">Тип на барање</p>
                       <p className="text-sm text-muted-foreground">
-                        {requestTypeLabels[request.type] || request.type}
+                        {DocumentRequestTypeLabel[request.type] ?? request.type}
                       </p>
                     </div>
                   </div>
@@ -153,98 +138,8 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             </CardContent>
           </Card>
 
-          {/* Extracted Data */}
-          <Card className="overflow-hidden border-border shadow-sm">
-            <CardHeader className="border-b border-border bg-muted/30">
-              <CardTitle>Информации за апликантот</CardTitle>
-              <CardDescription>
-                Податоци извлечени од вашиот документ за лична идентификација
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="p-6">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-400">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Име и презиме</p>
-                      <p className="text-sm text-muted-foreground">
-                        {request.extractedData.firstName} {request.extractedData.lastName}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-green-400 to-emerald-400">
-                      <CreditCard className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Број на личен документ</p>
-                      <p className="text-sm text-muted-foreground">{request.extractedData.idNumber}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-400">
-                      <CreditCard className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">ЕМБГ</p>
-                      <p className="text-sm text-muted-foreground">{request.extractedData.embg}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-400">
-                      <Calendar className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Датум на раѓање</p>
-                      <p className="text-sm text-muted-foreground">{request.extractedData.dateOfBirth}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-purple-400">
-                      <Calendar className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Важност на документот</p>
-                      <p className="text-sm text-muted-foreground">
-                        {request.extractedData.documentExpiryDate}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-indigo-400">
-                      <MapPin className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Адреса</p>
-                      <p className="text-sm text-muted-foreground">{request.extractedData.address}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Decision */}
-          {request.status === "approved" && (
+          {request.status === "APPROVED" && (
             <Card className="border-success/20 bg-success/5 shadow-sm">
               <CardContent className="flex items-start gap-4 p-6">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10">
@@ -260,7 +155,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             </Card>
           )}
 
-          {request.status === "rejected" && (
+          {request.status === "REJECTED" && (
             <Card className="border-destructive/20 bg-destructive/5 shadow-sm">
               <CardContent className="flex items-start gap-4 p-6">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
@@ -269,7 +164,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                 <div>
                   <h3 className="font-semibold text-destructive">Барањето е одбиено</h3>
                   <p className="text-sm text-muted-foreground">
-                    {request.rejectionReason ||
+                    {request.rejectionReason ??
                       "Вашето барање е одбиено. Контактирајте поддршка за повеќе информации."}
                   </p>
                 </div>
@@ -318,7 +213,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
 
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-foreground">
-                          {statusLabels[history.status] || history.status}
+                          {DocumentRequestStatusLabel[history.status] ?? history.status}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(history.timestamp).toLocaleDateString("mk-MK", {
@@ -347,71 +242,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             </CardHeader>
 
             <CardContent className="p-4">
-              {documents.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Сè уште нема достапни документи.</p>
-              ) : (
-                <div className="space-y-3">
-                  {documents.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-400">
-                          <FileText className="h-4 w-4 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{doc.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {requestTypeLabels[doc.type] || doc.type}
-                          </p>
-                        </div>
-                      </div>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Attachments */}
-          <Card className="overflow-hidden border-border shadow-sm">
-            <CardHeader className="border-b border-border bg-muted/30">
-              <CardTitle>Прилози</CardTitle>
-            </CardHeader>
-
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                {request.attachments.map((attachment, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-400">
-                        <FileText className="h-4 w-4 text-white" />
-                      </div>
-                      <span className="text-sm font-medium text-foreground">{attachment}</span>
-                    </div>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 rounded-full bg-sky-50 text-sky-600 hover:bg-sky-100"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+              <p className="text-sm text-muted-foreground">Сè уште нема достапни документи.</p>
             </CardContent>
           </Card>
         </div>
