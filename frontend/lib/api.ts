@@ -189,11 +189,27 @@ export async function apiOcrUpload(files: File[]): Promise<OcrResponse> {
 }
 
 // ─── Document request endpoints ───────────────────────────────────────────────
+export interface TemplateField {
+  name: string
+  type: string
+  label: string
+  required: boolean
+}
+
+export interface DocumentTemplate {
+  id: number
+  active: boolean
+  createdAt: string
+  description: string
+  schemaJson: TemplateField[]
+  title: string
+  type: string
+  version: number
+}
 
 export interface CreateRequestPayload {
-  type: string
-  title: string
-  description: string
+  templateId: number
+  submittedData: Record<string, any>
   notes: string | null
 }
 
@@ -204,6 +220,16 @@ export interface DocumentRequestResponse {
   title: string
   description: string
   status: string
+}
+
+export async function apiGetTemplateByType(
+  type: string
+): Promise<DocumentTemplate> {
+  const res = await fetch(`${BASE_URL}/api/templates/type/${type}`, {
+    method: "GET",
+    headers: authHeaders(),
+  })
+  return handleResponse<DocumentTemplate>(res)
 }
 
 export async function apiCreateRequest(

@@ -47,7 +47,10 @@ import {
   apiCreateRequest,
   apiUploadRequestFiles,
   apiGetUserIdentityDocuments,
+  apiGetTemplateByType,
   UserIdentityDocumentResponse,
+  DocumentTemplate,
+  TemplateField,
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
@@ -94,14 +97,9 @@ const newRequestSchema = z.object({
       "Внеси датум во формат ДД.ММ.ГГГГ (пр. 19.06.2025).",
     ),
   requestType: z.string().min(1, "Избери тип на барање."),
-  requestTitle: z
-    .string()
-    .trim()
-    .min(3, "Насловот мора да има најмалку 3 карактери."),
-  description: z
-    .string()
-    .trim()
-    .min(10, "Описот мора да има најмалку 10 карактери."),
+  requestTitle: z.string().optional(),
+  description: z.string().optional(),
+  dynamicData: z.record(z.string(), z.any()).optional(),
   notes: z.string().optional(),
 });
 
@@ -169,6 +167,9 @@ export default function NewRequestPage() {
     [],
   );
   const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
+  const [activeTemplate, setActiveTemplate] = useState<DocumentTemplate | null>(null);
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
+  const [templateError, setTemplateError] = useState<string | null>(null);
 
   useEffect(() => {
     apiGetUserIdentityDocuments()
@@ -187,12 +188,43 @@ export default function NewRequestPage() {
       dateOfBirth: "",
       embg: "",
       documentExpiryDate: "",
-      requestType: "request",
+      requestType: "",
       requestTitle: "",
       description: "",
+      dynamicData: {},
       notes: "",
     },
   });
+
+  const selectedType = form.watch("requestType");
+
+  useEffect(() => {
+    if (selectedType) {
+      setIsLoadingTemplate(true);
+      setTemplateError(null);
+      apiGetTemplateByType(selectedType.toUpperCase())
+        .then((template) => {
+          setActiveTemplate(template);
+          // Initialize dynamicData with template field defaults if needed
+          const initialData: Record<string, any> = {};
+          template.schemaJson.forEach(field => {
+            initialData[field.name] = "";
+          });
+          form.setValue("dynamicData", initialData);
+        })
+        .catch((err) => {
+          console.error("Failed to fetch template:", err);
+          setActiveTemplate(null);
+          setTemplateError(`Образецот за "${requestTypeLabels[selectedType] || selectedType}" моментално не е достапен. Не можете да поднесете барање без овој образец.`);
+        })
+        .finally(() => {
+          setIsLoadingTemplate(false);
+        });
+    } else {
+      setActiveTemplate(null);
+      setTemplateError(null);
+    }
+  }, [selectedType, form]);
 
   const handleFileDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -250,9 +282,10 @@ export default function NewRequestPage() {
         dateOfBirth: fields.birthDate ?? "",
         embg: String(fields.embg ?? ""),
         documentExpiryDate: fields.expiryDate ?? "",
-        requestType: "request",
+        requestType: "",
         requestTitle: "",
         description: "",
+        dynamicData: {},
         notes: "",
       });
 
@@ -279,12 +312,29 @@ export default function NewRequestPage() {
     setSubmitError(null);
 
     try {
-      const created = await apiCreateRequest({
-        type: submittedData.requestType.toUpperCase(),
-        title: submittedData.requestTitle,
-        description: submittedData.description,
+      const personalData = {
+        firstName: submittedData.firstName,
+        lastName: submittedData.lastName,
+        idNumber: submittedData.idNumber,
+        address: submittedData.address,
+        dateOfBirth: submittedData.dateOfBirth,
+        embg: submittedData.embg,
+        documentExpiryDate: submittedData.documentExpiryDate,
+      };
+
+      const payload: CreateRequestPayload = {
+        templateId: activeTemplate?.id || 0,
+        submittedData: {
+          ...personalData,
+          ...(submittedData.dynamicData || {
+            title: submittedData.requestTitle,
+            description: submittedData.description,
+          }),
+        },
         notes: submittedData.notes || null,
-      });
+      };
+
+      const created = await apiCreateRequest(payload);
 
       if (additionalFiles.length > 0) {
         await apiUploadRequestFiles(created.id, additionalFiles);
@@ -317,9 +367,10 @@ export default function NewRequestPage() {
       dateOfBirth: isoToDotDate(user.birthDate),
       embg: user.embg ?? "",
       documentExpiryDate: doc ? isoToDotDate(doc.expiryDate) : "",
-      requestType: "request",
+      requestType: "",
       requestTitle: "",
       description: "",
+      dynamicData: {},
       notes: "",
     });
     setStep("form");
@@ -823,40 +874,85 @@ export default function NewRequestPage() {
                     </p>
                   )}
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="requestTitle">
-                    Наслов на барањето <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="requestTitle"
-                    placeholder="пр. Барање за градежна дозвола"
-                    {...form.register("requestTitle")}
-                  />
-                  {form.formState.errors.requestTitle && (
-                    <p className="text-sm text-destructive">
-                      {form.formState.errors.requestTitle.message}
-                    </p>
-                  )}
+              {isLoadingTemplate && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Се вчитува образец за {requestTypeLabels[selectedType] || selectedType}...
                 </div>
-              </div>
+              )}
 
-              <div className="space-y-2">
-                <Label htmlFor="description">
-                  Опис <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  id="description"
-                  placeholder="Опишете го вашето барање подетално..."
-                  rows={4}
-                  {...form.register("description")}
-                />
-                {form.formState.errors.description && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.description.message}
-                  </p>
-                )}
-              </div>
+              {templateError && (
+                <Alert className="border-amber-200 bg-amber-50 text-amber-800">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{templateError}</AlertDescription>
+                </Alert>
+              )}
+
+              {activeTemplate && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <p className="text-sm font-medium text-primary">
+                      {activeTemplate.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {activeTemplate.description}
+                    </p>
+                  </div>
+                  
+                  {activeTemplate.schemaJson.map((field) => (
+                    <div key={field.name} className="space-y-2">
+                      <Label htmlFor={`dynamicData.${field.name}`}>
+                        {field.label} {field.required && <span className="text-red-500">*</span>}
+                      </Label>
+                      <Input
+                        id={`dynamicData.${field.name}`}
+                        type={field.type === "text" ? "text" : field.type}
+                        required={field.required}
+                        {...form.register(`dynamicData.${field.name}` as any)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!activeTemplate && !isLoadingTemplate && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="requestTitle">
+                      Наслов на барањето <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="requestTitle"
+                      placeholder="пр. Барање за градежна дозвола"
+                      {...form.register("requestTitle")}
+                    />
+                    {form.formState.errors.requestTitle && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.requestTitle.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="description">
+                      Опис <span className="text-red-500">*</span>
+                    </Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Опишете го вашето барање подетално..."
+                      rows={4}
+                      {...form.register("description")}
+                    />
+                    {form.formState.errors.description && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.description.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="notes">
@@ -937,7 +1033,7 @@ export default function NewRequestPage() {
             >
               Назад
             </Button>
-            <Button type="submit">Генерирај документ</Button>
+            <Button type="submit" disabled={!!templateError || isLoadingTemplate}>Генерирај документ</Button>
           </div>
         </form>
       )}
@@ -972,15 +1068,6 @@ export default function NewRequestPage() {
                       <p className="font-medium text-foreground">
                         {requestTypeLabels[previewData.requestType] ||
                           previewData.requestType}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-medium uppercase text-muted-foreground">
-                        Наслов на барање
-                      </p>
-                      <p className="font-medium text-foreground">
-                        {previewData.requestTitle}
                       </p>
                     </div>
                   </div>
@@ -1024,14 +1111,43 @@ export default function NewRequestPage() {
                     </div>
                   </div>
 
-                  <div className="border-t border-border pt-4">
-                    <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">
-                      Опис
-                    </p>
-                    <p className="text-sm text-foreground">
-                      {previewData.description}
-                    </p>
-                  </div>
+                  {activeTemplate ? (
+                    <div className="border-t border-border pt-4">
+                      <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">
+                        Податоци за барањето ({activeTemplate.title})
+                      </p>
+                      <div className="grid gap-2 text-sm sm:grid-cols-2">
+                        {activeTemplate.schemaJson.map((field) => (
+                          <p key={field.name}>
+                            <span className="text-muted-foreground">{field.label}:</span>{" "}
+                            {previewData.dynamicData?.[field.name] || "/"}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">
+                            Наслов на барање
+                          </p>
+                          <p className="font-medium text-foreground">
+                            {previewData.requestTitle}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-border pt-4">
+                        <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">
+                          Опис
+                        </p>
+                        <p className="text-sm text-foreground">
+                          {previewData.description}
+                        </p>
+                      </div>
+                    </>
+                  )}
 
                   {previewData.notes && (
                     <div className="border-t border-border pt-4">
