@@ -31,6 +31,8 @@ import {
   apiAdminAcceptRequest,
   apiAdminRejectRequest,
   apiAdminUpdateRequestStatus,
+  apiAdminDownloadConfirmationPdf,
+  apiAdminDownloadOfficialDocumentPdf,
   DocumentRequestStatusLabel,
   DocumentRequestTypeLabel,
   type DocumentRequestFullResponse,
@@ -46,6 +48,7 @@ import {
   AlertCircle,
   Loader2,
   ChevronDown,
+  Download,
 } from "lucide-react"
 
 const rejectSchema = z.object({
@@ -69,6 +72,7 @@ export default function AdminRequestDetailPage() {
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [showInfoDialog, setShowInfoDialog] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [downloading, setDownloading] = useState<"confirmation" | "document" | null>(null)
 
   const rejectForm = useForm<RejectFormValues>({
     resolver: zodResolver(rejectSchema),
@@ -137,6 +141,20 @@ export default function AdminRequestDetailPage() {
       console.error("Failed to update status", err)
     } finally {
       setIsProcessing(false)
+    }
+  }
+
+  const handleDownload = async (type: "confirmation" | "document") => {
+    if (!requestData) return
+    setDownloading(type)
+    try {
+      if (type === "confirmation") {
+        await apiAdminDownloadConfirmationPdf(requestData.id)
+      } else {
+        await apiAdminDownloadOfficialDocumentPdf(requestData.id)
+      }
+    } finally {
+      setDownloading(null)
     }
   }
 
@@ -225,6 +243,36 @@ export default function AdminRequestDetailPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => handleDownload("confirmation")}
+              disabled={downloading !== null}
+            >
+              {downloading === "confirmation" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              Потврда PDF
+            </Button>
+
+            {requestData.status === "APPROVED" && (
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => handleDownload("document")}
+                disabled={downloading !== null}
+              >
+                {downloading === "document" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                Одлука PDF
+              </Button>
+            )}
+
             <Button
               variant="outline"
               className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"

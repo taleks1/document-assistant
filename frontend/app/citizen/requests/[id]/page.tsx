@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusBadge } from "@/components/status-badge"
 import {
   apiGetRequestById,
+  apiDownloadConfirmationPdf,
+  apiDownloadOfficialDocumentPdf,
   DocumentRequestFullResponse,
   DocumentRequestTypeLabel,
   DocumentRequestStatusLabel,
@@ -20,15 +22,31 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Loader2,
 } from "lucide-react"
 
 export default function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [request, setRequest] = useState<DocumentRequestFullResponse | null>(null)
+  const [downloading, setDownloading] = useState<"confirmation" | "document" | null>(null)
 
   useEffect(() => {
     apiGetRequestById(Number(id)).then(setRequest)
   }, [id])
+
+  async function handleDownload(type: "confirmation" | "document") {
+    if (!request) return
+    setDownloading(type)
+    try {
+      if (type === "confirmation") {
+        await apiDownloadConfirmationPdf(request.id)
+      } else {
+        await apiDownloadOfficialDocumentPdf(request.id)
+      }
+    } finally {
+      setDownloading(null)
+    }
+  }
 
   if (!request) {
     return (
@@ -64,7 +82,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             <p className="mt-1 text-muted-foreground">{request.title}</p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link href={`/citizen/tracking?id=${request.id}`}>
               <Button variant="outline" className="gap-2 rounded-xl">
                 <Clock className="h-4 w-4" />
@@ -72,10 +90,34 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
               </Button>
             </Link>
 
-            <Button variant="outline" className="gap-2 rounded-xl">
-              <Download className="h-4 w-4" />
-              Преземи
+            <Button
+              variant="outline"
+              className="gap-2 rounded-xl"
+              onClick={() => handleDownload("confirmation")}
+              disabled={downloading !== null}
+            >
+              {downloading === "confirmation" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              Преземи потврда
             </Button>
+
+            {request.status === "APPROVED" && (
+              <Button
+                className="gap-2 rounded-xl"
+                onClick={() => handleDownload("document")}
+                disabled={downloading !== null}
+              >
+                {downloading === "document" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                Преземи официјален документ
+              </Button>
+            )}
           </div>
         </div>
       </div>

@@ -448,3 +448,50 @@ export async function apiUploadRequestFiles(
   })
   return handleResponse<void>(res)
 }
+
+// ─── PDF download helpers ─────────────────────────────────────────────────────
+
+async function downloadPdfBlob(url: string, filename: string): Promise<void> {
+  const token = getToken()
+  const res = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!res.ok) throw new Error(`Failed to download PDF: ${res.status}`)
+  const blob = await res.blob()
+  const blobUrl = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = blobUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(blobUrl)
+}
+
+export function apiDownloadConfirmationPdf(id: number): Promise<void> {
+  return downloadPdfBlob(
+    `${BASE_URL}/api/requests/${id}/pdf/confirmation`,
+    `potvrda-${id}.pdf`
+  )
+}
+
+export function apiDownloadOfficialDocumentPdf(id: number): Promise<void> {
+  return downloadPdfBlob(
+    `${BASE_URL}/api/requests/${id}/pdf/document`,
+    `odluka-${id}.pdf`
+  )
+}
+
+export function apiAdminDownloadConfirmationPdf(id: number): Promise<void> {
+  return downloadPdfBlob(
+    `${BASE_URL}/api/admin/requests/${id}/pdf/confirmation`,
+    `potvrda-${id}.pdf`
+  )
+}
+
+export function apiAdminDownloadOfficialDocumentPdf(id: number): Promise<void> {
+  return downloadPdfBlob(
+    `${BASE_URL}/api/admin/requests/${id}/pdf/document`,
+    `odluka-${id}.pdf`
+  )
+}
