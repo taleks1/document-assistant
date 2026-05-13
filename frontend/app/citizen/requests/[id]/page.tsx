@@ -4,7 +4,7 @@ import { use, useState, useEffect } from "react"
 import { formatDate, formatDateTime } from "@/lib/utils"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusBadge } from "@/components/status-badge"
 import {
   apiGetRequestById,
@@ -21,6 +21,9 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  MapPin,
+  CreditCard,
+  User,
 } from "lucide-react"
 
 export default function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -147,7 +150,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     <div>
                       <p className="text-sm font-medium text-foreground">Име и презиме</p>
                       <p className="text-sm text-muted-foreground">
-                        {request.extractedData.firstName} {request.extractedData.lastName}
+                        First name and last name here
                       </p>
                     </div>
                   </div>
@@ -160,7 +163,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">Број на личен документ</p>
-                      <p className="text-sm text-muted-foreground">{request.extractedData.idNumber}</p>
+                      <p className="text-sm text-muted-foreground">Document number here</p>
                     </div>
                   </div>
                 </div>
@@ -172,7 +175,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">ЕМБГ</p>
-                      <p className="text-sm text-muted-foreground">{request.extractedData.embg}</p>
+                      <p className="text-sm text-muted-foreground">Embg here</p>
                     </div>
                   </div>
                 </div>
@@ -184,7 +187,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">Датум на раѓање</p>
-                      <p className="text-sm text-muted-foreground">{request.extractedData.dateOfBirth}</p>
+                      <p className="text-sm text-muted-foreground">Date of birth here</p>
                     </div>
                   </div>
                 </div>
@@ -197,7 +200,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     <div>
                       <p className="text-sm font-medium text-foreground">Важност на документот</p>
                       <p className="text-sm text-muted-foreground">
-                        {request.extractedData.documentExpiryDate}
+                        Expiry date here
                       </p>
                     </div>
                   </div>
@@ -210,7 +213,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">Адреса</p>
-                      <p className="text-sm text-muted-foreground">{request.extractedData.address}</p>
+                      <p className="text-sm text-muted-foreground">Address here</p>
                     </div>
                   </div>
                 </div>
