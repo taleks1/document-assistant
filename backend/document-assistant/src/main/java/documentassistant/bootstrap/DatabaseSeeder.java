@@ -1,13 +1,17 @@
 package documentassistant.bootstrap;
 
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import documentassistant.model.entity.DocumentRequest;
 import documentassistant.model.entity.DocumentTemplate;
 import documentassistant.model.entity.User;
+
+import documentassistant.model.entity.*;
 import documentassistant.model.enums.DocumentRequestStatus;
 import documentassistant.model.enums.DocumentRequestType;
 import documentassistant.model.enums.Role;
+import documentassistant.repository.DailyDocumentRequestCounterRepository;
 import documentassistant.repository.DocumentRequestRepository;
 import documentassistant.repository.DocumentTemplateRepository;
 import documentassistant.repository.UserRepository;
@@ -30,6 +34,7 @@ import java.util.List;
 public class DatabaseSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
+    private final DailyDocumentRequestCounterRepository dailyDocumentRequestCounterRepository;
     private final DocumentTemplateRepository templateRepository;
     private final DocumentRequestRepository requestRepository;
     private final PasswordEncoder passwordEncoder;
@@ -248,7 +253,14 @@ public class DatabaseSeeder implements CommandLineRunner {
                                 """))
                         .notes("Приложена целата потребна документација.")
                         .status(DocumentRequestStatus.SUBMITTED)
-                        .createdAt(Instant.now())
+                        .createdAt(Instant.now().minusSeconds(172800))
+                        .statusHistory(List.of(
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.SUBMITTED)
+                                        .timestamp(Instant.now().minusSeconds(172800))
+                                        .note("Барањето е поднесено")
+                                        .build()
+                        ))
                         .updatedAt(Instant.now())
                         .build(),
 
@@ -266,8 +278,19 @@ public class DatabaseSeeder implements CommandLineRunner {
                                 """))
                         .notes("Се случува постојано.")
                         .status(DocumentRequestStatus.IN_REVIEW)
-                        .createdAt(Instant.now())
                         .updatedAt(Instant.now())
+                        .createdAt(Instant.now().minusSeconds(86400))
+                        .statusHistory(List.of(
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.SUBMITTED)
+                                        .timestamp(Instant.now().minusSeconds(86400))
+                                        .note("Барањето е поднесено")
+                                        .build(),
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.IN_REVIEW)
+                                        .timestamp(Instant.now().minusSeconds(85400))
+                                        .build()
+                        ))
                         .build(),
 
                 DocumentRequest.builder()
@@ -283,11 +306,72 @@ public class DatabaseSeeder implements CommandLineRunner {
                                 """))
                         .notes("Потребно е итно процесирање.")
                         .status(DocumentRequestStatus.APPROVED)
+                        .updatedAt(Instant.now())
+                        .createdAt(Instant.now().minusSeconds(86400))
+                        .statusHistory(List.of(
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.SUBMITTED)
+                                        .timestamp(Instant.now().minusSeconds(86400))
+                                        .note("Барањето е поднесено")
+                                        .build(),
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.IN_REVIEW)
+                                        .timestamp(Instant.now().minusSeconds(85400))
+                                        .build(),
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.APPROVED)
+                                        .timestamp(Instant.now().minusSeconds(84400))
+                                        .build()
+                        ))
+                        .build(),
+
+                DocumentRequest.builder()
+                        .referenceNumber("REQ-2026-000004")
+                        .user(citizen2)
+                        .template(permitTemplate)
+                        .templateVersion(permitTemplate.getVersion())
+                        .templateSchemaSnapshot(permitTemplate.getSchemaJson())
+                        .submittedData(parseJson("""
+                                {
+                                  "constructionAddress": "Булевар Илинден 45, Скопје",
+                                  "parcelNumber": "678/90"
+                                }
+                                """))
+                        .notes("Доставени се сите документи.")
+                        .status(DocumentRequestStatus.REJECTED)
                         .createdAt(Instant.now())
                         .updatedAt(Instant.now())
+                        .statusHistory(List.of(
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.SUBMITTED)
+                                        .timestamp(Instant.now())
+                                        .note("Барањето е поднесено")
+                                        .build(),
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.IN_REVIEW)
+                                        .timestamp(Instant.now())
+                                        .build(),
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.REJECTED)
+                                        .timestamp(Instant.now())
+                                        .note("Недостасуваат дополнителни документи")
+                                        .build()
+                        ))
                         .build()
         );
 
+        List<DailyDocumentRequestCounter> requestCounters = List.of(
+                new DailyDocumentRequestCounter(LocalDate.now().minusMonths(5),28),
+                new DailyDocumentRequestCounter(LocalDate.now().minusMonths(4),18),
+                new DailyDocumentRequestCounter(LocalDate.now().minusMonths(3),44),
+                new DailyDocumentRequestCounter(LocalDate.now().minusMonths(2),30),
+                new DailyDocumentRequestCounter(LocalDate.now().minusMonths(1),23),
+                new DailyDocumentRequestCounter(LocalDate.now().minusDays(2),1),
+                new DailyDocumentRequestCounter(LocalDate.now().minusDays(1),2),
+                new DailyDocumentRequestCounter(LocalDate.now(),1)
+        );
+
         requestRepository.saveAll(requests);
+        dailyDocumentRequestCounterRepository.saveAll(requestCounters);
     }
 }
