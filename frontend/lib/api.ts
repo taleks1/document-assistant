@@ -271,6 +271,15 @@ export async function apiDeleteUserIdentityDocument(id: number): Promise<void> {
   return handleResponse<void>(res)
 }
 
+export async function apiGetRequests(): Promise<DocumentRequestResponse[]> {
+    const res = await fetch(`${BASE_URL}/api/requests?page=0&size=50`, {
+        method: "GET",
+        headers: authHeaders(),
+    })
+    const page = await handleResponse<{ content: DocumentRequestResponse[] }>(res)
+    return page.content
+}
+
 export async function apiUploadRequestFiles(
   requestId: number,
   files: File[]

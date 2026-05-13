@@ -1,6 +1,14 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { formatDate } from "@/lib/utils"
+
+function displayDate(val: string | undefined): string {
+    if (!val) return ""
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(val)) return val
+    const d = new Date(val)
+    return isNaN(d.getTime()) ? val : formatDate(d)
+}
 import { useAuth } from "@/lib/auth-context"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -337,7 +345,10 @@ export default function ProfilePage() {
                     <Label htmlFor="birthDate" className="text-xs text-muted-foreground uppercase font-bold">Датум на раѓање</Label>
                     <div className="relative">
                       <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="birthDate" readOnly={!isEditing} type="date" {...profileForm.register("birthDate")} className={`pl-10 bg-background/50 transition-all ${!isEditing ? "opacity-70 cursor-default focus-visible:ring-0" : ""}`} />
+                      {isEditing
+                        ? <Input id="birthDate" type="date" {...profileForm.register("birthDate")} className="pl-10 bg-background/50" />
+                        : <Input id="birthDate" type="text" readOnly value={displayDate(profileForm.getValues("birthDate"))} className="pl-10 bg-background/50 opacity-70 cursor-default focus-visible:ring-0" />
+                      }
                     </div>
                   </div>
 
