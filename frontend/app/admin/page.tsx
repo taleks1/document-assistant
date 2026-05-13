@@ -1,15 +1,13 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { weeklyData } from "@/lib/mock-data"
 import {
-  getAdminStats,
-  getRequestsByStatus,
-  getRequestsByType,
-  getMonthlyActivity,
-  requestTypeLabels,
-  statusLabels,
-} from "@/lib/mock-data"
+  DocumentRequestTypeLabel,
+  DocumentRequestStatusLabel,
+  type AdminStatsResponse,
+  apiAdminGetStats,
+} from "@/lib/api"
 
 import {
   BarChart,
@@ -36,13 +34,53 @@ const CHART_COLORS = [
 ]
 
 export default function ReportsPage() {
-  const stats = getAdminStats()
-  const statusData = getRequestsByStatus()
-  const typeData = getRequestsByType()
-  const monthlyData = getMonthlyActivity()
+  const [stats, setStats] = useState<AdminStatsResponse | null>(null)
 
-  const approvalRate = ((stats.approved / stats.total) * 100).toFixed(1)
-  const rejectionRate = ((stats.rejected / stats.total) * 100).toFixed(1)
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const data = await apiAdminGetStats()
+        setStats(data)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchStats()
+  }, [])
+
+  if (!stats) {
+    return (
+      <div className="flex h-96 items-center justify-center text-muted-foreground">
+        Се вчитува...
+      </div>
+    )
+  }
+
+  // Transform Record<string, number> → [{month, requests}]
+  const monthlyData = Object.entries(stats.byMonth).map(([month, requests]) => ({
+    month,
+    requests,
+  }))
+
+  // Build status pie data from the flat counts
+  const statusData = [
+    { status: "SUBMITTED", count: stats.total - stats.processing - stats.approved - stats.rejected },
+    { status: "IN_REVIEW", count: stats.processing },
+    { status: "APPROVED",  count: stats.approved },
+    { status: "REJECTED",  count: stats.rejected },
+  ].filter((s) => s.count > 0)
+
+  // Transform Record<string, number> → [{day, requests}]
+  const weeklyData = Object.entries(stats.thisWeek).map(([day, requests]) => ({
+    day,
+    requests,
+  }))
+
+  // Transform Record<DocumentRequestType, number> → [{type, count}]
+  const typeData = Object.entries(stats.byType).map(([type, count]) => ({
+    type,
+    count: count ?? 0,
+  }))
 
   return (
     <div className="p-6 lg:p-8">
@@ -82,21 +120,9 @@ export default function ReportsPage() {
                     </linearGradient>
                   </defs>
 
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="var(--border)"
-                  />
-
-                  <XAxis
-                    dataKey="month"
-                    stroke="var(--muted-foreground)"
-                    fontSize={12}
-                  />
-
-                  <YAxis
-                    stroke="var(--muted-foreground)"
-                    fontSize={12}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} />
+                  <YAxis stroke="var(--muted-foreground)" fontSize={12} />
 
                   <Tooltip
                     contentStyle={{
@@ -143,7 +169,7 @@ export default function ReportsPage() {
                     dataKey="count"
                     nameKey="status"
                   >
-                    {statusData.map((entry, index) => (
+                    {statusData.map((_, index) => (
                       <Cell
                         key={`cell-${index}`}
                         fill={CHART_COLORS[index % CHART_COLORS.length]}
@@ -154,7 +180,7 @@ export default function ReportsPage() {
                   <Tooltip
                     formatter={(value, name) => [
                       value,
-                      statusLabels[name as keyof typeof statusLabels] ?? name,
+                      DocumentRequestStatusLabel[name as keyof typeof DocumentRequestStatusLabel] ?? name,
                     ]}
                     contentStyle={{
                       backgroundColor: "var(--card)",
@@ -169,7 +195,7 @@ export default function ReportsPage() {
                     iconType="circle"
                     wrapperStyle={{ paddingTop: "18px" }}
                     formatter={(value) =>
-                      statusLabels[value as keyof typeof statusLabels] ?? value
+                      DocumentRequestStatusLabel[value as keyof typeof DocumentRequestStatusLabel] ?? value
                     }
                   />
                 </PieChart>
@@ -196,21 +222,9 @@ export default function ReportsPage() {
                   data={weeklyData}
                   margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
                 >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="var(--border)"
-                  />
-
-                  <XAxis
-                    dataKey="day"
-                    stroke="var(--muted-foreground)"
-                    fontSize={12}
-                  />
-
-                  <YAxis
-                    stroke="var(--muted-foreground)"
-                    fontSize={12}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="day" stroke="var(--muted-foreground)" fontSize={12} />
+                  <YAxis stroke="var(--muted-foreground)" fontSize={12} />
 
                   <Tooltip
                     contentStyle={{
@@ -250,15 +264,13 @@ export default function ReportsPage() {
                 <div key={item.type} className="flex items-center gap-4">
                   <div
                     className="h-3 w-3 rounded-full"
-                    style={{
-                      backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
-                    }}
+                    style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
                   />
 
                   <div className="flex-1">
                     <div className="flex justify-between text-sm">
                       <span className="text-foreground">
-                        {requestTypeLabels[item.type as keyof typeof requestTypeLabels] ?? item.type}
+                        {DocumentRequestTypeLabel[item.type as keyof typeof DocumentRequestTypeLabel] ?? item.type}
                       </span>
 
                       <span className="text-muted-foreground">
@@ -297,7 +309,7 @@ export default function ReportsPage() {
                   Стапка на одобрени
                 </span>
                 <span className="text-lg font-bold text-success">
-                  {approvalRate}%
+                  {stats.approvedRate.toFixed(1)}%
                 </span>
               </div>
 
@@ -306,37 +318,12 @@ export default function ReportsPage() {
                   Стапка на одбиени
                 </span>
                 <span className="text-lg font-bold text-destructive">
-                  {rejectionRate}%
+                  {stats.rejectedRate.toFixed(1)}%
                 </span>
               </div>
             </div>
           </CardContent>
         </Card>
-      </div>
-    </div>
-  )
-}
-
-function ActivityItem({
-  icon,
-  bg,
-  title,
-  desc,
-}: {
-  icon: React.ReactNode
-  bg: string
-  title: string
-  desc: string
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className={`flex h-8 w-8 items-center justify-center rounded-full ${bg}`}>
-        {icon}
-      </div>
-
-      <div>
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="text-xs text-muted-foreground">{desc}</p>
       </div>
     </div>
   )

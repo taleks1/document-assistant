@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { Separator } from "@/components/ui/separator"
@@ -15,25 +16,37 @@ import {
 } from "@/components/ui/table"
 import { StatsCard } from "@/components/stats-card"
 import { StatusBadge } from "@/components/status-badge"
-import { mockRequests, getCitizenStats } from "@/lib/mock-data"
+import {
+  apiGetCurrentUser,
+  apiGetRequestsForUser,
+  DocumentRequestFullResponse,
+  DocumentRequestTypeLabel,
+} from "@/lib/api"
 import { FileText, Clock, CheckCircle, XCircle, Plus, Eye, Search } from "lucide-react"
 
-const requestTypeLabels: Record<string, string> = {
-  request: "Барање",
-  permit: "Дозвола",
-  complaint: "Жалба",
-  application: "Апликација",
-  certificate: "Потврда",
-  objection: "Приговор",
-  statement: "Изјава",
-  report: "Пријава",
-  other: "Друго",
-}
+const PAGE_SIZE = 10
 
 export default function CitizenDashboard() {
   const { user } = useAuth()
-  const stats = getCitizenStats("1")
-  const recentRequests = mockRequests.filter((r) => r.userId === "1").slice(0, 5)
+  const [requests, setRequests] = useState<DocumentRequestFullResponse[]>([])
+
+  useEffect(() => {
+    async function fetchRequests() {
+      const currentUser = await apiGetCurrentUser()
+      const page = await apiGetRequestsForUser(currentUser.id, 0, PAGE_SIZE)
+      setRequests(page.content)
+    }
+    fetchRequests()
+  }, [])
+
+  const recentRequests = requests.slice(0, 5)
+
+  const stats = {
+    total: requests.length,
+    processing: requests.filter((r) => r.status === "IN_REVIEW" || r.status === "SUBMITTED").length,
+    approved: requests.filter((r) => r.status === "APPROVED").length,
+    rejected: requests.filter((r) => r.status === "REJECTED").length,
+  }
 
   return (
     <div className="p-6 lg:p-8">
@@ -81,103 +94,99 @@ export default function CitizenDashboard() {
       <Separator />
 
       {/* Recent Requests */}
-<Card className="border-none bg-transparent shadow-none">
-  <CardHeader className="flex flex-row items-center justify-between">
-    <div>
-      <CardTitle>Последни барања</CardTitle>
-      <CardDescription>
-        Твоите најнови поднесени административни барања
-      </CardDescription>
-    </div>
+      <Card className="border-none bg-transparent shadow-none">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Последни барања</CardTitle>
+            <CardDescription>
+              Твоите најнови поднесени административни барања
+            </CardDescription>
+          </div>
 
-    <Link href="/citizen/requests">
-      <Button variant="outline" size="sm">
-        Види ги сите
-      </Button>
-    </Link>
-  </CardHeader>
+          <Link href="/citizen/requests">
+            <Button variant="outline" size="sm">
+              Види ги сите
+            </Button>
+          </Link>
+        </CardHeader>
 
-  <CardContent>
-    <div className="overflow-x-auto rounded-[22px] bg-card p-3 shadow-sm">
-      <Table className="min-w-[1000px] border-separate border-spacing-y-2 text-sm">
-        <TableHeader>
-          <TableRow className="overflow-hidden border-0 bg-transparent hover:bg-transparent">
-            <TableHead className="rounded-l-[16px] bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
-              ID на барање
-            </TableHead>
+        <CardContent>
+          <div className="overflow-x-auto rounded-[22px] bg-card p-3 shadow-sm">
+            <Table className="min-w-[1000px] border-separate border-spacing-y-2 text-sm">
+              <TableHeader>
+                <TableRow className="overflow-hidden border-0 bg-transparent hover:bg-transparent">
+                  <TableHead className="rounded-l-[16px] bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+                    ID на барање
+                  </TableHead>
+                  <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+                    Тип
+                  </TableHead>
+                  <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+                    Наслов
+                  </TableHead>
+                  <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+                    Датум
+                  </TableHead>
+                  <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+                    Статус
+                  </TableHead>
+                  <TableHead className="rounded-r-[16px] bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
+                    Акции
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
 
-            <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
-              Тип
-            </TableHead>
+              <TableBody>
+                {recentRequests.map((request) => (
+                  <TableRow
+                    key={request.id}
+                    className="overflow-hidden border-0 bg-transparent hover:bg-transparent"
+                  >
+                    <TableCell className="rounded-l-[14px] border border-r-0 border-border bg-white px-3 py-3 text-center font-medium text-slate-700 shadow-sm">
+                      {request.referenceNumber}
+                    </TableCell>
 
-            <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
-              Наслов
-            </TableHead>
+                    <TableCell className="border-y border-border bg-white px-3 py-3 text-center text-slate-700 shadow-sm">
+                      {DocumentRequestTypeLabel[request.type] ?? request.type}
+                    </TableCell>
 
-            <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
-              Датум
-            </TableHead>
+                    <TableCell className="max-w-[160px] truncate border-y border-border bg-white px-3 py-3 text-center text-slate-700 shadow-sm">
+                      {request.title}
+                    </TableCell>
 
-            <TableHead className="bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
-              Статус
-            </TableHead>
+                    <TableCell className="border-y border-border bg-white px-3 py-3 text-center text-slate-700 shadow-sm">
+                      {new Date(request.createdAt).toLocaleDateString("mk-MK")}
+                    </TableCell>
 
-            <TableHead className="rounded-r-[16px] bg-primary px-3 py-3 text-center font-semibold text-primary-foreground">
-              Акции
-            </TableHead>
-          </TableRow>
-        </TableHeader>
+                    <TableCell className="border-y border-border bg-white px-3 py-3 text-center shadow-sm">
+                      <div className="flex justify-center">
+                        <StatusBadge status={request.status} />
+                      </div>
+                    </TableCell>
 
-        <TableBody>
-          {recentRequests.map((request) => (
-            <TableRow
-              key={request.id}
-              className="overflow-hidden border-0 bg-transparent hover:bg-transparent"
-            >
-              <TableCell className="rounded-l-[14px] border border-r-0 border-border bg-white px-3 py-3 text-center font-medium text-slate-700 shadow-sm">
-                {request.id}
-              </TableCell>
+                    <TableCell className="rounded-r-[14px] border border-l-0 border-border bg-white px-3 py-3 text-center shadow-sm">
+                      <div className="flex items-center justify-center gap-2">
+                        <Link href={`/citizen/requests/${request.id}`}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
 
-              <TableCell className="border-y border-border bg-white px-3 py-3 text-center text-slate-700 shadow-sm">
-                {requestTypeLabels[request.type] || request.type}
-              </TableCell>
+                        <Link href={`/citizen/tracking?id=${request.id}`}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                            <Search className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
-              <TableCell className="max-w-[160px] truncate border-y border-border bg-white px-3 py-3 text-center text-slate-700 shadow-sm">
-                {request.title}
-              </TableCell>
-
-              <TableCell className="border-y border-border bg-white px-3 py-3 text-center text-slate-700 shadow-sm">
-                {new Date(request.createdAt).toLocaleDateString("mk-MK")}
-              </TableCell>
-
-              <TableCell className="border-y border-border bg-white px-3 py-3 text-center shadow-sm">
-                <div className="flex justify-center">
-                  <StatusBadge status={request.status} />
-                </div>
-              </TableCell>
-
-              <TableCell className="rounded-r-[14px] border border-l-0 border-border bg-white px-3 py-3 text-center shadow-sm">
-                <div className="flex items-center justify-center gap-2">
-                  <Link href={`/citizen/requests/${request.id}`}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </Link>
-
-                  <Link href={`/citizen/tracking?id=${request.id}`}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                      <Search className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  </CardContent>
-</Card>
       {/* Quick Actions */}
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
         <Link href="/citizen/new-request" className="block">
@@ -199,7 +208,6 @@ export default function CitizenDashboard() {
             className="h-full cursor-pointer transition-colors hover:border-primary/50"
           />
         </Link>
-
       </div>
     </div>
   )

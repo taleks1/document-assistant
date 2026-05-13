@@ -33,6 +33,8 @@ import {
 } from "@/lib/api"
 import { Search, Eye, Download, Plus, Filter } from "lucide-react"
 
+const PAGE_SIZE = 10
+
 export default function MyRequestsPage() {
   const [requests, setRequests] = useState<DocumentRequestFullResponse[]>([])
   const [searchQuery, setSearchQuery] = useState("")
@@ -42,7 +44,7 @@ export default function MyRequestsPage() {
   useEffect(() => {
     async function fetchRequests() {
       const user = await apiGetCurrentUser()
-      const page = await apiGetRequestsForUser(user.id, 0, 100)
+      const page = await apiGetRequestsForUser(user.id, 0, PAGE_SIZE)
       setRequests(page.content)
     }
     fetchRequests()

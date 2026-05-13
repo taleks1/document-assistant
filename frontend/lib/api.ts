@@ -249,6 +249,28 @@ export async function apiGetAdminUserRequests(
   return handleResponse<Page<DocumentRequestFullResponse>>(res)
 }
 
+// ─── Admin stats ──────────────────────────────────────────────────────────────
+
+export interface AdminStatsResponse {
+  total: number
+  processing: number
+  approved: number
+  rejected: number
+  approvedRate: number
+  rejectedRate: number
+  thisWeek: Record<string, number>
+  byMonth: Record<string, number>
+  byType: Partial<Record<DocumentRequestType, number>>
+}
+
+export async function apiAdminGetStats(): Promise<AdminStatsResponse> {
+  const res = await fetch(`${BASE_URL}/api/admin/stats`, {
+    method: "GET",
+    headers: authHeaders(),
+  })
+  return handleResponse<AdminStatsResponse>(res)
+}
+
 // ─── OCR endpoints ────────────────────────────────────────────────────────────
 
 export interface OcrResponse {
