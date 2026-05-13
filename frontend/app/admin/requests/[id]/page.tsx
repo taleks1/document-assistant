@@ -266,7 +266,7 @@ export default function AdminRequestDetailPage() {
 
                 <div className="grid flex-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <p className="text-sm text-muted-foreground">Ime и презиме</p>
+                    <p className="text-sm text-muted-foreground">Име и презиме</p>
                     <p className="font-medium text-foreground">{requestData.userFullName}</p>
                   </div>
 

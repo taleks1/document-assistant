@@ -58,15 +58,4 @@ public class DocumentRequestController {
     ) {
         return ResponseEntity.ok(documentRequestService.update(id, request));
     }
-
-    @GetMapping("/user/{id}")
-    public ResponseEntity<Page<DocumentRequestResponse>> getRequestsForUser(
-            @PathVariable Integer id,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        return ResponseEntity.ok(
-                documentRequestService.getRequestsByUserId(id, PageRequest.of(page, size))
-        );
-    }
 }

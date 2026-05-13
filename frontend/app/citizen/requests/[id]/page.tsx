@@ -65,13 +65,6 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
           </div>
 
           <div className="flex gap-2">
-            <Link href={`/citizen/tracking?id=${request.id}`}>
-              <Button variant="outline" className="gap-2 rounded-xl">
-                <Clock className="h-4 w-4" />
-                Следи статус
-              </Button>
-            </Link>
-
             <Button variant="outline" className="gap-2 rounded-xl">
               <Download className="h-4 w-4" />
               Преземи
