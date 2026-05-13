@@ -10,23 +10,27 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { StatusBadge } from "@/components/status-badge"
-import { mockRequests, requestTypeLabels } from "@/lib/mock-data"
-import { apiGetAdminUserById, type User } from "@/lib/api"
+import {
+  apiGetAdminUserById,
+  apiGetAdminUserRequests,
+  DocumentRequestTypeLabel,
+  type User,
+  type DocumentRequestFullResponse,
+} from "@/lib/api"
 import {
   ArrowLeft,
   User as UserIcon,
   Mail,
   Calendar,
   Shield,
+  FileText,
   Loader2,
   AlertCircle,
-  FileText,
 } from "lucide-react"
-
 
 const userRoleLabels: Record<string, string> = {
   CITIZEN: "Корисник",
-  ADMIN: "Администратор"
+  ADMIN: "Администратор",
 }
 
 const userStatusStyles: Record<string, string> = {
@@ -34,16 +38,21 @@ const userStatusStyles: Record<string, string> = {
   false: "bg-destructive/10 text-destructive border-destructive/30",
 }
 
+const PAGE_SIZE = 10
+
 export default function AdminUserDetailPage() {
   const { id } = useParams<{ id: string }>()
-
-  const userRequests = useMemo(() => {
-    return mockRequests.filter((request) => request.userId === id)
-  }, [id])
 
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const [requests, setRequests] = useState<DocumentRequestFullResponse[]>([])
+  const [requestsTotal, setRequestsTotal] = useState(0)
+  const [requestsTotalPages, setRequestsTotalPages] = useState(0)
+  const [requestsPage, setRequestsPage] = useState(0)
+  const [requestsLoading, setRequestsLoading] = useState(true)
+  const [requestsError, setRequestsError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -57,6 +66,23 @@ export default function AdminUserDetailPage() {
       )
       .finally(() => setIsLoading(false))
   }, [id])
+
+  useEffect(() => {
+    if (!id) return
+    setRequestsLoading(true)
+    setRequestsError(null)
+
+    apiGetAdminUserRequests(Number(id), requestsPage, PAGE_SIZE)
+      .then((data) => {
+        setRequests(data.content)
+        setRequestsTotal(data.totalElements)
+        setRequestsTotalPages(data.totalPages)
+      })
+      .catch((err) =>
+        setRequestsError(err instanceof Error ? err.message : "Грешка при вчитување на барањата")
+      )
+      .finally(() => setRequestsLoading(false))
+  }, [id, requestsPage])
 
   if (isLoading) {
     return (
@@ -88,7 +114,6 @@ export default function AdminUserDetailPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Page header */}
       <div>
         <Link href="/admin/users">
           <Button variant="outline" className="mb-4 gap-2">
@@ -102,7 +127,6 @@ export default function AdminUserDetailPage() {
 
       <Separator />
 
-      {/* User info card */}
       <Card className="border-none shadow-none bg-transparent">
         <CardHeader>
           <CardTitle>Основни информации</CardTitle>
@@ -110,18 +134,15 @@ export default function AdminUserDetailPage() {
         </CardHeader>
         <CardContent>
           <div className="flex items-start gap-6">
-            {/* Avatar */}
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10">
               <UserIcon className="h-8 w-8 text-primary" />
             </div>
 
-            {/* Details grid */}
             <div className="grid flex-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-
               <div className="flex items-start gap-2">
                 <UserIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Име и презиме</p>
+                  <p className="text-xs text-muted-foreground">Ime и презиме</p>
                   <p className="font-medium text-foreground">
                     {user.firstname} {user.lastname}
                   </p>
@@ -157,7 +178,6 @@ export default function AdminUserDetailPage() {
                   </p>
                 </div>
               </div>
-
             </div>
           </div>
         </CardContent>
@@ -165,30 +185,35 @@ export default function AdminUserDetailPage() {
 
       <Separator />
 
-      {/* User requests (mocked) */}
       <Card className="border-none shadow-none bg-transparent mt-6">
         <CardHeader>
           <CardTitle>Барања на корисникот</CardTitle>
           <CardDescription>
-            Вкупно {userRequests.length} барањ{userRequests.length === 1 ? "е" : "а"}
+            Вкупно {requestsTotal} барањ{requestsTotal === 1 ? "е" : "а"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {userRequests.length === 0 ? (
+          {requestsLoading ? (
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Се вчитуваат барањата...</span>
+            </div>
+          ) : requestsError ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{requestsError}</AlertDescription>
+            </Alert>
+          ) : requests.length === 0 ? (
             <p className="text-muted-foreground">Овој корисник моментално нема барања.</p>
           ) : (
             <div className="space-y-4">
-              {userRequests.map((request) => (
-                <div
-                  key={request.id}
-                  className="rounded-xl border border-border p-4"
-                >
+              {requests.map((request) => (
+                <div key={request.id} className="rounded-xl border border-border p-4">
                   <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="font-semibold text-foreground">{request.title}</p>
-                      <p className="text-sm text-muted-foreground">{request.id}</p>
+                      <p className="text-sm text-muted-foreground">{request.referenceNumber}</p>
                     </div>
-
                     <StatusBadge status={request.status} />
                   </div>
 
@@ -198,7 +223,7 @@ export default function AdminUserDetailPage() {
                       <div>
                         <p className="text-xs text-muted-foreground">Тип</p>
                         <p className="text-sm font-medium text-foreground">
-                          {requestTypeLabels[request.type]}
+                          {DocumentRequestTypeLabel[request.type] ?? request.type}
                         </p>
                       </div>
                     </div>
@@ -222,19 +247,14 @@ export default function AdminUserDetailPage() {
                         </p>
                       </div>
                     </div>
+                  </div>
 
-                    <div>
-                      <p className="text-xs text-muted-foreground">Прилози</p>
-                      <p className="text-sm font-medium text-foreground">
-                        {request.attachments.length}
-                      </p>
+                  {request.description && (
+                    <div className="mt-4">
+                      <p className="text-xs text-muted-foreground">Опис</p>
+                      <p className="text-sm text-foreground">{request.description}</p>
                     </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <p className="text-xs text-muted-foreground">Опис</p>
-                    <p className="text-sm text-foreground">{request.description}</p>
-                  </div>
+                  )}
 
                   <div className="mt-4">
                     <Link href={`/admin/requests/${request.id}`}>
@@ -245,6 +265,30 @@ export default function AdminUserDetailPage() {
                   </div>
                 </div>
               ))}
+
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-sm text-muted-foreground">
+                  Прикажани {requests.length} од вкупно {requestsTotal} барања
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={requestsPage === 0}
+                    onClick={() => setRequestsPage((p) => p - 1)}
+                  >
+                    Претходно
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={requestsPage + 1 >= requestsTotalPages}
+                    onClick={() => setRequestsPage((p) => p + 1)}
+                  >
+                    Следно
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

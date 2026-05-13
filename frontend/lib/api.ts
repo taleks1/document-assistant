@@ -27,6 +27,77 @@ export interface User {
   active: boolean
 }
 
+export type DocumentRequestStatus = "SUBMITTED" | "IN_REVIEW" | "REVIEWED" | "APPROVED" | "REJECTED"
+export const DocumentRequestStatusLabel: Record<DocumentRequestStatus, string> = {
+  SUBMITTED: "Поднесено",
+  IN_REVIEW: "Во обработка",
+  REVIEWED: "Разгледано",
+  APPROVED: "Одобрено",
+  REJECTED: "Одбиено",
+}
+
+export type DocumentRequestType =
+  | "REQUEST"
+  | "PERMIT"
+  | "COMPLAINT"
+  | "APPLICATION"
+  | "CERTIFICATE"
+  | "OBJECTION"
+  | "STATEMENT"
+  | "REPORT"
+  | "OTHER"
+export const DocumentRequestTypeLabel: Record<DocumentRequestType, string> = {
+  REQUEST: "Барање",
+  PERMIT: "Дозвола",
+  COMPLAINT: "Жалба",
+  APPLICATION: "Апликација",
+  CERTIFICATE: "Потврда",
+  OBJECTION: "Приговор",
+  STATEMENT: "Изјава",
+  REPORT: "Извештај",
+  OTHER: "Друго",
+}
+
+export interface DocumentRequestResponse {
+  id: number
+  referenceNumber: string
+  type: string
+  title: string
+  description: string
+  status: string
+}
+
+export interface StatusHistoryResponse {
+  status: DocumentRequestStatus
+  timestamp: string
+  note: string | null
+}
+
+export interface DocumentRequestFullResponse {
+  id: number
+  referenceNumber: string
+  userId: number
+  userFullName: string
+  userEmail: string
+  type: DocumentRequestType
+  title: string
+  description: string | null
+  notes: string | null
+  status: DocumentRequestStatus
+  rejectionReason: string | null
+  createdAt: string
+  updatedAt: string
+  statusHistory: StatusHistoryResponse[]
+}
+
+export interface RejectRequest {
+  reason: string
+}
+
+export interface UpdateStatusRequest {
+  status: DocumentRequestStatus
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getToken(): string | null {
@@ -45,7 +116,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
     }
     throw new Error(message)
   }
-  
+
   if (res.status === 204 || res.headers.get("content-length") === "0") {
     return {} as T
   }
@@ -133,13 +204,13 @@ export async function apiChangePassword(
   return handleResponse<void>(res)
 }
 
-// ─── Admin user list ──────────────────────────────────────────────────────────
+// ─── Admin user endpoints ─────────────────────────────────────────────────────
 
 export interface Page<T> {
   content: T[]
   totalElements: number
   totalPages: number
-  number: number   // current page (0-indexed)
+  number: number
   size: number
   first: boolean
   last: boolean
@@ -164,6 +235,40 @@ export async function apiGetAdminUserById(id: number | string): Promise<User> {
     headers: authHeaders(),
   })
   return handleResponse<User>(res)
+}
+
+export async function apiGetAdminUserRequests(
+  userId: number,
+  page: number,
+  size: number
+): Promise<Page<DocumentRequestFullResponse>> {
+  const res = await fetch(
+    `${BASE_URL}/api/admin/users/${userId}/requests?page=${page}&size=${size}`,
+    { method: "GET", headers: authHeaders() }
+  )
+  return handleResponse<Page<DocumentRequestFullResponse>>(res)
+}
+
+// ─── Admin stats ──────────────────────────────────────────────────────────────
+
+export interface AdminStatsResponse {
+  total: number
+  processing: number
+  approved: number
+  rejected: number
+  approvedRate: number
+  rejectedRate: number
+  thisWeek: Record<string, number>
+  byMonth: Record<string, number>
+  byType: Partial<Record<DocumentRequestType, number>>
+}
+
+export async function apiAdminGetStats(): Promise<AdminStatsResponse> {
+  const res = await fetch(`${BASE_URL}/api/admin/stats`, {
+    method: "GET",
+    headers: authHeaders(),
+  })
+  return handleResponse<AdminStatsResponse>(res)
 }
 
 // ─── OCR endpoints ────────────────────────────────────────────────────────────
@@ -197,15 +302,6 @@ export interface CreateRequestPayload {
   notes: string | null
 }
 
-export interface DocumentRequestResponse {
-  id: number
-  referenceNumber: string
-  type: string
-  title: string
-  description: string
-  status: string
-}
-
 export async function apiCreateRequest(
   payload: CreateRequestPayload
 ): Promise<DocumentRequestResponse> {
@@ -215,6 +311,72 @@ export async function apiCreateRequest(
     body: JSON.stringify(payload),
   })
   return handleResponse<DocumentRequestResponse>(res)
+}
+
+export async function apiGetRequestById(id: number): Promise<DocumentRequestFullResponse> {
+  const res = await fetch(`${BASE_URL}/api/requests/${id}`, {
+    method: "GET",
+    headers: authHeaders(),
+  })
+  return handleResponse<DocumentRequestFullResponse>(res)
+}
+
+export async function apiGetAllRequests(
+  page: number,
+  size: number
+): Promise<Page<DocumentRequestFullResponse>> {
+  const res = await fetch(
+    `${BASE_URL}/api/requests?page=${page}&size=${size}`,
+    { method: "GET", headers: authHeaders() }
+  )
+  return handleResponse<Page<DocumentRequestFullResponse>>(res)
+}
+
+// ─── Admin request endpoints ──────────────────────────────────────────────────
+
+export async function apiAdminGetAllRequests(
+  page: number,
+  size: number
+): Promise<Page<DocumentRequestFullResponse>> {
+  const res = await fetch(
+    `${BASE_URL}/api/admin/requests?page=${page}&size=${size}`,
+    { method: "GET", headers: authHeaders() }
+  )
+  return handleResponse<Page<DocumentRequestFullResponse>>(res)
+}
+
+export async function apiAdminGetRequestById(id: number): Promise<DocumentRequestFullResponse> {
+  const res = await fetch(`${BASE_URL}/api/admin/requests/${id}`, {
+    method: "GET",
+    headers: authHeaders(),
+  })
+  return handleResponse<DocumentRequestFullResponse>(res)
+}
+
+export async function apiAdminAcceptRequest(id: number): Promise<DocumentRequestFullResponse> {
+  const res = await fetch(`${BASE_URL}/api/admin/requests/${id}/accept`, {
+    method: "PUT",
+    headers: authHeaders(),
+  })
+  return handleResponse<DocumentRequestFullResponse>(res)
+}
+
+export async function apiAdminRejectRequest(id: number, reason: string): Promise<DocumentRequestFullResponse> {
+  const res = await fetch(`${BASE_URL}/api/admin/requests/${id}/reject`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify({ reason }),
+  })
+  return handleResponse<DocumentRequestFullResponse>(res)
+}
+
+export async function apiAdminUpdateRequestStatus(id: number, status: DocumentRequestStatus): Promise<DocumentRequestFullResponse> {
+  const res = await fetch(`${BASE_URL}/api/admin/requests/${id}/status`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify({ status }),
+  })
+  return handleResponse<DocumentRequestFullResponse>(res)
 }
 
 // ─── User identity document endpoints ────────────────────────────────────────

@@ -2,21 +2,7 @@ package documentassistant.model.entity;
 
 import documentassistant.model.enums.DocumentRequestStatus;
 import documentassistant.model.enums.DocumentRequestType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -66,6 +52,7 @@ public class DocumentRequest {
 
     @ElementCollection
     @CollectionTable(name = "document_request_status_history", joinColumns = @jakarta.persistence.JoinColumn(name = "request_id"))
+    @OrderBy("timestamp DESC")
     @Builder.Default
     private java.util.List<StatusHistory> statusHistory = new java.util.ArrayList<>();
 
