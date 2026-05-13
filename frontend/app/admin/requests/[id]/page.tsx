@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { formatDateTime } from "@/lib/utils"
+import { formatDateTime, formatDate } from "@/lib/utils"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
@@ -206,7 +206,7 @@ export default function AdminRequestDetailPage() {
           <div>
             <div className="flex items-center justify-between gap-6">
               <h1 className="text-2xl font-bold text-foreground">
-                {requestData.referenceNumber}
+                {requestData.title}
               </h1>
 
               <div className="flex items-center gap-3">
@@ -240,7 +240,7 @@ export default function AdminRequestDetailPage() {
               </div>
             </div>
 
-            <p className="mt-1 text-muted-foreground">{requestData.title}</p>
+            <p className="mt-1 text-muted-foreground">{requestData.referenceNumber}</p>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -313,15 +313,59 @@ export default function AdminRequestDetailPage() {
                   <User className="h-8 w-8 text-primary" />
                 </div>
 
-                <div className="grid flex-1 gap-4 sm:grid-cols-2">
+                <div className="grid flex-1 gap-6 sm:grid-cols-2">
                   <div>
-                    <p className="text-sm text-muted-foreground">Име и презиме</p>
-                    <p className="font-medium text-foreground">{requestData.userFullName}</p>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold">Податоци од кориснички профил</p>
+                    <div className="mt-2 grid gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Име и презиме</p>
+                        <p className="font-medium text-foreground">{requestData.userFullName}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Е-пошта</p>
+                        <p className="font-medium text-foreground">{requestData.userEmail}</p>
+                      </div>
+                    </div>
                   </div>
 
                   <div>
-                    <p className="text-sm text-muted-foreground">Е-пошта</p>
-                    <p className="font-medium text-foreground">{requestData.userEmail}</p>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold">Лични податоци од барањето</p>
+                    <div className="mt-2 grid gap-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Име</p>
+                          <p className="font-medium text-foreground">{requestData.firstname}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Презиме</p>
+                          <p className="font-medium text-foreground">{requestData.lastname}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Број на документ</p>
+                          <p className="font-medium text-foreground">{requestData.cardId}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">ЕМБГ</p>
+                          <p className="font-medium text-foreground">{requestData.embg}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Датум на раѓање</p>
+                          <p className="font-medium text-foreground">{formatDate(requestData.birthDate)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Важност на документ</p>
+                          <p className="font-medium text-foreground">{formatDate(requestData.cardExpiryDate)}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Адреса</p>
+                        <p className="font-medium text-foreground">{requestData.address}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -336,6 +380,14 @@ export default function AdminRequestDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex items-start gap-3 sm:col-span-2">
+                  <FileText className="mt-0.5 h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Наслов на барање</p>
+                    <p className="text-sm text-muted-foreground">{requestData.title}</p>
+                  </div>
+                </div>
+
                 <div className="flex items-start gap-3">
                   <FileText className="mt-0.5 h-5 w-5 text-muted-foreground" />
                   <div>

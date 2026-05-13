@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 @Data
@@ -28,6 +29,13 @@ public class DocumentRequestResponse {
     private String notes;
     private DocumentRequestStatus status;
     private String rejectionReason;
+    private String firstname;
+    private String lastname;
+    private String embg;
+    private String address;
+    private String cardId;
+    private LocalDate birthDate;
+    private LocalDate cardExpiryDate;
     private Instant createdAt;
     private Instant updatedAt;
     private List<StatusHistoryResponse> statusHistory;
@@ -47,6 +55,13 @@ public class DocumentRequestResponse {
                 .rejectionReason(request.getRejectionReason())
                 .createdAt(request.getCreatedAt())
                 .updatedAt(request.getUpdatedAt())
+                .firstname(request.getFirstname())
+                .lastname(request.getLastname())
+                .embg(request.getEmbg())
+                .address(request.getAddress())
+                .cardId(request.getCardId())
+                .birthDate(request.getBirthDate())
+                .cardExpiryDate(request.getCardExpiryDate())
                 .statusHistory(request.getStatusHistory() != null ? 
                     request.getStatusHistory().stream().map(StatusHistoryResponse::from).toList() : 
                     java.util.Collections.emptyList())
