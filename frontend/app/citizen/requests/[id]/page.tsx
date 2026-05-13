@@ -1,6 +1,7 @@
 "use client"
 
 import { use } from "react"
+import { formatDate, formatDateTime } from "@/lib/utils"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -128,11 +129,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     <div>
                       <p className="text-sm font-medium text-foreground">Датум на поднесување</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(request.createdAt).toLocaleDateString("mk-MK", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
+                        {formatDate(request.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -321,13 +318,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                           {statusLabels[history.status] || history.status}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(history.timestamp).toLocaleDateString("mk-MK", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {formatDateTime(history.timestamp)}
                         </p>
                         {history.note && (
                           <p className="mt-1 text-xs text-muted-foreground">{history.note}</p>

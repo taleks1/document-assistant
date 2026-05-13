@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { formatDate } from "@/lib/utils"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -17,7 +18,6 @@ import {
   Mail,
   Calendar,
   Shield,
-  Hash,
   Loader2,
   AlertCircle,
   FileText,
@@ -208,7 +208,7 @@ export default function AdminUserDetailPage() {
                       <div>
                         <p className="text-xs text-muted-foreground">Поднесено</p>
                         <p className="text-sm font-medium text-foreground">
-                          {new Date(request.createdAt).toLocaleDateString("mk-MK")}
+                          {formatDate(request.createdAt)}
                         </p>
                       </div>
                     </div>

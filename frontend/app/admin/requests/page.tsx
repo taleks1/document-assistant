@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { formatDate } from "@/lib/utils"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -271,7 +272,7 @@ export default function AdminRequestsPage() {
             </TableCell>
 
             <TableCell className="border-y bg-white px-3 py-3 text-slate-700 shadow-sm">
-              {new Date(request.createdAt).toLocaleDateString()}
+              {formatDate(request.createdAt)}
             </TableCell>
 
             <TableCell className="border-y bg-white px-3 py-3 shadow-sm">

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { formatDate } from "@/lib/utils"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
@@ -162,13 +163,13 @@ export default function StatusTrackingPage() {
                 <div>
                   <span className="text-muted-foreground">Поднесено:</span>{" "}
                   <span className="text-foreground">
-                    {new Date(searchedRequest.createdAt).toLocaleDateString("mk-MK")}
+                    {formatDate(searchedRequest.createdAt)}
                   </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Последно ажурирање:</span>{" "}
                   <span className="text-foreground">
-                    {new Date(searchedRequest.updatedAt).toLocaleDateString("mk-MK")}
+                    {formatDate(searchedRequest.updatedAt)}
                   </span>
                 </div>
               </div>
