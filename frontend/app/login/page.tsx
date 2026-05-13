@@ -52,9 +52,9 @@ export default function LoginPage() {
 
       <Card className="w-full max-w-md border-border">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Добредојдовте назад</CardTitle>
+          <CardTitle className="text-2xl">Добредојдовте назад!</CardTitle>
           <CardDescription>
-            Најавете се за да пристапите до вашата сметка и да ги управувате вашите барања
+            Најавете се за да пристапите до вашата сметка
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -102,24 +102,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 space-y-4">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Demo Accounts</span>
-              </div>
-            </div>
-
-            <div className="rounded-lg bg-muted p-4 text-sm">
-              <p className="mb-2 font-medium text-foreground">Test Credentials: </p>
-              <div className="space-y-1 text-muted-foreground">
-                <p><span className="font-medium">citizen:</span> johndoe@gmail.com / johndoe123</p>
-                <p><span className="font-medium">admin:</span> admin@gov.com / admin123</p>
-              </div>
-            </div>
-
+          <div className="mt-6">
             <p className="text-center text-sm text-muted-foreground">
               {"Немате сметка? "}
               <Link href="/register" className="font-medium text-primary hover:underline">

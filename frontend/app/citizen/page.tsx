@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
+import { formatDate } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,8 +18,7 @@ import {
 import { StatsCard } from "@/components/stats-card"
 import { StatusBadge } from "@/components/status-badge"
 import {
-  apiGetCurrentUser,
-  apiGetRequestsForUser,
+  apiGetAllRequests,
   DocumentRequestFullResponse,
   DocumentRequestTypeLabel,
 } from "@/lib/api"
@@ -32,8 +32,7 @@ export default function CitizenDashboard() {
 
   useEffect(() => {
     async function fetchRequests() {
-      const currentUser = await apiGetCurrentUser()
-      const page = await apiGetRequestsForUser(currentUser.id, 0, PAGE_SIZE)
+      const page = await apiGetAllRequests(0, PAGE_SIZE)
       setRequests(page.content)
     }
     fetchRequests()
@@ -154,9 +153,9 @@ export default function CitizenDashboard() {
                       {request.title}
                     </TableCell>
 
-                    <TableCell className="border-y border-border bg-white px-3 py-3 text-center text-slate-700 shadow-sm">
-                      {new Date(request.createdAt).toLocaleDateString("mk-MK")}
-                    </TableCell>
+              <TableCell className="border-y border-border bg-white px-3 py-3 text-center text-slate-700 shadow-sm">
+                {formatDate(request.createdAt)}
+              </TableCell>
 
                     <TableCell className="border-y border-border bg-white px-3 py-3 text-center shadow-sm">
                       <div className="flex justify-center">
@@ -165,19 +164,11 @@ export default function CitizenDashboard() {
                     </TableCell>
 
                     <TableCell className="rounded-r-[14px] border border-l-0 border-border bg-white px-3 py-3 text-center shadow-sm">
-                      <div className="flex items-center justify-center gap-2">
-                        <Link href={`/citizen/requests/${request.id}`}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-
-                        <Link href={`/citizen/tracking?id=${request.id}`}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                            <Search className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                      </div>
+                      <Link href={`/citizen/requests/${request.id}`}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -188,23 +179,13 @@ export default function CitizenDashboard() {
       </Card>
 
       {/* Quick Actions */}
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+      <div className="mt-8">
         <Link href="/citizen/new-request" className="block">
           <StatsCard
             title="Поднеси ново барање"
             value=""
             description="Започни ново административно барање"
             icon={<Plus className="h-6 w-6 text-primary" />}
-            className="h-full cursor-pointer transition-colors hover:border-primary/50"
-          />
-        </Link>
-
-        <Link href="/citizen/tracking" className="block">
-          <StatsCard
-            title="Следи статус"
-            value=""
-            description="Провери го статусот на твоите барања"
-            icon={<Search className="h-6 w-6 text-info" />}
             className="h-full cursor-pointer transition-colors hover:border-primary/50"
           />
         </Link>

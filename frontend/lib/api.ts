@@ -321,13 +321,12 @@ export async function apiGetRequestById(id: number): Promise<DocumentRequestFull
   return handleResponse<DocumentRequestFullResponse>(res)
 }
 
-export async function apiGetRequestsForUser(
-  userId: number,
+export async function apiGetAllRequests(
   page: number,
   size: number
 ): Promise<Page<DocumentRequestFullResponse>> {
   const res = await fetch(
-    `${BASE_URL}/api/requests/user/${userId}?page=${page}&size=${size}`,
+    `${BASE_URL}/api/requests?page=${page}&size=${size}`,
     { method: "GET", headers: authHeaders() }
   )
   return handleResponse<Page<DocumentRequestFullResponse>>(res)
@@ -432,6 +431,15 @@ export async function apiDeleteUserIdentityDocument(id: number): Promise<void> {
     headers: authHeaders(),
   })
   return handleResponse<void>(res)
+}
+
+export async function apiGetRequests(): Promise<DocumentRequestResponse[]> {
+    const res = await fetch(`${BASE_URL}/api/requests?page=0&size=50`, {
+        method: "GET",
+        headers: authHeaders(),
+    })
+    const page = await handleResponse<{ content: DocumentRequestResponse[] }>(res)
+    return page.content
 }
 
 export async function apiUploadRequestFiles(

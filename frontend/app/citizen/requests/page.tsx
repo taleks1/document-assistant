@@ -24,8 +24,7 @@ import {
 } from "@/components/ui/select"
 import { StatusBadge } from "@/components/status-badge"
 import {
-  apiGetCurrentUser,
-  apiGetRequestsForUser,
+  apiGetAllRequests,
   DocumentRequestFullResponse,
   DocumentRequestStatus,
   DocumentRequestType,
@@ -43,8 +42,7 @@ export default function MyRequestsPage() {
 
   useEffect(() => {
     async function fetchRequests() {
-      const user = await apiGetCurrentUser()
-      const page = await apiGetRequestsForUser(user.id, 0, PAGE_SIZE)
+      const page = await apiGetAllRequests(0, PAGE_SIZE)
       setRequests(page.content)
     }
     fetchRequests()
@@ -196,13 +194,13 @@ export default function MyRequestsPage() {
                         {request.title}
                       </TableCell>
 
-                      <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
-                        {new Date(request.createdAt).toLocaleDateString()}
-                      </TableCell>
+            <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
+              {(() => { const d = new Date(request.createdAt); return `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}` })()}
+            </TableCell>
 
-                      <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
-                        {new Date(request.updatedAt).toLocaleDateString()}
-                      </TableCell>
+            <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle text-slate-700 shadow-sm">
+              {(() => { const d = new Date(request.updatedAt); return `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}` })()}
+            </TableCell>
 
                       <TableCell className="border-y border-border bg-white px-3 py-3 text-center align-middle shadow-sm">
                         <div className="flex justify-center">
@@ -220,17 +218,6 @@ export default function MyRequestsPage() {
                               title="Прегледај"
                             >
                               <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
-
-                          <Link href={`/citizen/tracking?id=${request.id}`}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 rounded-full"
-                              title="Следи"
-                            >
-                              <Search className="h-4 w-4" />
                             </Button>
                           </Link>
 
