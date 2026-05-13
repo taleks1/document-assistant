@@ -34,6 +34,13 @@ public class DocumentRequestService {
                 .description(request.getDescription().trim())
                 .notes(request.getNotes() == null ? null : request.getNotes().trim())
                 .status(DocumentRequestStatus.SUBMITTED)
+                .firstname(request.getFirstname().trim())
+                .lastname(request.getLastname().trim())
+                .embg(request.getEmbg().trim())
+                .address(request.getAddress().trim())
+                .cardId(request.getCardId().trim())
+                .birthDate(request.getBirthDate())
+                .cardExpiryDate(request.getCardExpiryDate())
                 .statusHistory(new java.util.ArrayList<>(java.util.List.of(
                         documentassistant.model.entity.StatusHistory.builder()
                                 .status(DocumentRequestStatus.SUBMITTED)

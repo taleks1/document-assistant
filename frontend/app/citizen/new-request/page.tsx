@@ -152,6 +152,12 @@ function isoToDotDate(iso: string | null | undefined): string {
   return `${day}.${month}.${year}`;
 }
 
+function dotDateToIso(dotDate: string | null | undefined): string {
+  if (!dotDate || !dotDate.includes(".")) return dotDate || "";
+  const [day, month, year] = dotDate.split(".");
+  return `${year}-${month}-${day}`;
+}
+
 export default function NewRequestPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -311,6 +317,13 @@ export default function NewRequestPage() {
         title: submittedData.requestTitle,
         description: submittedData.description,
         notes: submittedData.notes || null,
+        firstname: submittedData.firstName,
+        lastname: submittedData.lastName,
+        embg: submittedData.embg,
+        address: submittedData.address,
+        cardId: submittedData.idNumber,
+        birthDate: dotDateToIso(submittedData.dateOfBirth),
+        cardExpiryDate: dotDateToIso(submittedData.documentExpiryDate),
       });
 
       if (additionalFiles.length > 0) {

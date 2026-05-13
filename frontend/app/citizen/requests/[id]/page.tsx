@@ -79,10 +79,10 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground">{request.referenceNumber}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{request.title}</h1>
               <StatusBadge status={request.status} />
             </div>
-            <p className="mt-1 text-muted-foreground">{request.title}</p>
+            <p className="mt-1 text-muted-foreground">{request.referenceNumber}</p>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -129,6 +129,18 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
 
             <CardContent className="p-6">
               <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:col-span-2">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-violet-400">
+                      <FileText className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Наслов на барање</p>
+                      <p className="text-sm text-muted-foreground">{request.title}</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                   <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-400">
@@ -191,7 +203,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     <div>
                       <p className="text-sm font-medium text-foreground">Име и презиме</p>
                       <p className="text-sm text-muted-foreground">
-                        First name and last name here
+                        {request.firstname} {request.lastname}
                       </p>
                     </div>
                   </div>
@@ -204,7 +216,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">Број на личен документ</p>
-                      <p className="text-sm text-muted-foreground">Document number here</p>
+                      <p className="text-sm text-muted-foreground">{request.cardId}</p>
                     </div>
                   </div>
                 </div>
@@ -216,7 +228,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">ЕМБГ</p>
-                      <p className="text-sm text-muted-foreground">Embg here</p>
+                      <p className="text-sm text-muted-foreground">{request.embg}</p>
                     </div>
                   </div>
                 </div>
@@ -228,7 +240,9 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">Датум на раѓање</p>
-                      <p className="text-sm text-muted-foreground">Date of birth here</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(request.birthDate)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -241,7 +255,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     <div>
                       <p className="text-sm font-medium text-foreground">Важност на документот</p>
                       <p className="text-sm text-muted-foreground">
-                        Expiry date here
+                        {formatDate(request.cardExpiryDate)}
                       </p>
                     </div>
                   </div>
@@ -254,7 +268,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">Адреса</p>
-                      <p className="text-sm text-muted-foreground">Address here</p>
+                      <p className="text-sm text-muted-foreground">{request.address}</p>
                     </div>
                   </div>
                 </div>

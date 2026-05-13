@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Data
 @Builder
@@ -41,6 +42,14 @@ public class DocumentRequest {
 
     @Column(length = 2000)
     private String notes;
+
+    private String firstname;
+    private String lastname;
+    private String embg;
+    private String address;
+    private String cardId;
+    private LocalDate birthDate;
+    private LocalDate cardExpiryDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)

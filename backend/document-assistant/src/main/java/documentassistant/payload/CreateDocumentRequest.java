@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -28,4 +30,12 @@ public class CreateDocumentRequest {
 
     @Size(max = 2000, message = "Notes must be at most 2000 characters")
     private String notes;
+
+    private String firstname;
+    private String lastname;
+    private String embg;
+    private String address;
+    private String cardId;
+    private LocalDate birthDate;
+    private LocalDate cardExpiryDate;
 }

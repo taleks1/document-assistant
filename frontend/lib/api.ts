@@ -85,6 +85,13 @@ export interface DocumentRequestFullResponse {
   notes: string | null
   status: DocumentRequestStatus
   rejectionReason: string | null
+  firstname: string
+  lastname: string
+  embg: string
+  address: string
+  cardId: string
+  birthDate: string
+  cardExpiryDate: string
   createdAt: string
   updatedAt: string
   statusHistory: StatusHistoryResponse[]
@@ -300,6 +307,13 @@ export interface CreateRequestPayload {
   title: string
   description: string
   notes: string | null
+  firstname: string
+  lastname: string
+  embg: string
+  address: string
+  cardId: string
+  birthDate: string
+  cardExpiryDate: string
 }
 
 export async function apiCreateRequest(
