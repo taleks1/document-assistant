@@ -25,6 +25,7 @@ import {
 import { StatusBadge } from "@/components/status-badge"
 import {
   apiGetAllRequests,
+  apiDownloadOfficialDocumentPdf,
   DocumentRequestFullResponse,
   DocumentRequestStatus,
   DocumentRequestType,
@@ -47,6 +48,10 @@ export default function MyRequestsPage() {
     }
     fetchRequests()
   }, [])
+
+  function handleDownloadDecision(id: number) {
+    apiDownloadOfficialDocumentPdf(id).catch(() => {})
+  }
 
   const filteredRequests = requests.filter((request) => {
     const matchesSearch =
@@ -221,14 +226,17 @@ export default function MyRequestsPage() {
                             </Button>
                           </Link>
 
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                            title="Преземи"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          {request.status === "APPROVED" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full"
+                              title="Преземи одлука"
+                              onClick={() => handleDownloadDecision(request.id)}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

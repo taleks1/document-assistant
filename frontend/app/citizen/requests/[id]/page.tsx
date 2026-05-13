@@ -19,7 +19,6 @@ import {
   Download,
   FileText,
   Calendar,
-  Clock,
   CheckCircle,
   XCircle,
   AlertCircle,
@@ -115,11 +114,6 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                 Преземи официјален документ
               </Button>
             )}
-          <div className="flex gap-2">
-            <Button variant="outline" className="gap-2 rounded-xl">
-              <Download className="h-4 w-4" />
-              Преземи
-            </Button>
           </div>
         </div>
       </div>
