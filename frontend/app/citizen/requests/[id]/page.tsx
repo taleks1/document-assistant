@@ -8,15 +8,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { StatusBadge } from "@/components/status-badge"
 import {
   apiGetRequestById,
+  apiGetRequestFiles,
+  apiDownloadRequestFile,
+  apiPreviewRequestFile,
   apiDownloadConfirmationPdf,
   apiDownloadOfficialDocumentPdf,
   DocumentRequestFullResponse,
+  RequestFileResponse,
   DocumentRequestTypeLabel,
   DocumentRequestStatusLabel,
 } from "@/lib/api"
 import {
   ArrowLeft,
   Download,
+  Eye,
   FileText,
   Calendar,
   CheckCircle,
@@ -26,15 +31,25 @@ import {
   MapPin,
   CreditCard,
   User,
+  Paperclip,
 } from "lucide-react"
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 export default function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [request, setRequest] = useState<DocumentRequestFullResponse | null>(null)
+  const [files, setFiles] = useState<RequestFileResponse[]>([])
   const [downloading, setDownloading] = useState<"confirmation" | "document" | null>(null)
 
   useEffect(() => {
-    apiGetRequestById(Number(id)).then(setRequest)
+    const numericId = Number(id)
+    apiGetRequestById(numericId).then(setRequest)
+    apiGetRequestFiles(numericId).then(setFiles).catch(() => {})
   }, [id])
 
   async function handleDownload(type: "confirmation" | "document") {
@@ -367,14 +382,64 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             </CardContent>
           </Card>
 
-          {/* Documents */}
+          {/* Attachments */}
           <Card className="overflow-hidden border-border shadow-sm">
             <CardHeader className="border-b border-border bg-muted/30">
-              <CardTitle>Документи</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Paperclip className="h-4 w-4" />
+                Прилози
+              </CardTitle>
+              <CardDescription>
+                {files.length} {files.length === 1 ? "прилог" : "прилози"}
+              </CardDescription>
             </CardHeader>
 
             <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">Сè уште нема достапни документи.</p>
+              {files.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Нема прикачени прилози.</p>
+              ) : (
+                <div className="space-y-3">
+                  {files.map((file) => (
+                    <div
+                      key={file.id}
+                      className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-400">
+                          <FileText className="h-4 w-4 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-foreground" title={file.fileName}>
+                            {file.fileName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                        </div>
+                      </div>
+
+                      <div className="ml-2 flex shrink-0 items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full text-slate-500 hover:text-sky-600"
+                          title="Прегледај"
+                          onClick={() => apiPreviewRequestFile(Number(id), file.id).catch(() => {})}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full text-slate-500 hover:text-emerald-600"
+                          title="Преземи"
+                          onClick={() => apiDownloadRequestFile(Number(id), file.id, file.fileName).catch(() => {})}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

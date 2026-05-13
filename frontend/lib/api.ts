@@ -393,6 +393,59 @@ export async function apiAdminUpdateRequestStatus(id: number, status: DocumentRe
   return handleResponse<DocumentRequestFullResponse>(res)
 }
 
+// ─── Request file endpoints ───────────────────────────────────────────────────
+
+export interface RequestFileResponse {
+  id: number
+  fileName: string
+  contentType: string
+  size: number
+  uploadedAt: string
+}
+
+export async function apiGetRequestFiles(requestId: number): Promise<RequestFileResponse[]> {
+  const res = await fetch(`${BASE_URL}/api/requests/${requestId}/files`, {
+    method: "GET",
+    headers: authHeaders(),
+  })
+  return handleResponse<RequestFileResponse[]>(res)
+}
+
+export async function apiDownloadRequestFile(
+  requestId: number,
+  fileId: number,
+  fileName: string
+): Promise<void> {
+  const token = getToken()
+  const res = await fetch(`${BASE_URL}/api/requests/${requestId}/files/${fileId}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!res.ok) throw new Error(`Failed to download file: ${res.status}`)
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = fileName
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+export async function apiPreviewRequestFile(
+  requestId: number,
+  fileId: number
+): Promise<void> {
+  const token = getToken()
+  const res = await fetch(`${BASE_URL}/api/requests/${requestId}/files/${fileId}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!res.ok) throw new Error(`Failed to load file: ${res.status}`)
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  window.open(url, "_blank")
+}
+
 // ─── User identity document endpoints ────────────────────────────────────────
 
 export type DocumentType = "ID_CARD" | "PASSPORT" | "DRIVING_LICENSE"

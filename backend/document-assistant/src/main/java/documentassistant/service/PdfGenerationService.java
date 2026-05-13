@@ -95,44 +95,44 @@ public class PdfGenerationService {
     }
 
     private void buildConfirmation(PageWriter pw, DocumentRequestResponse req, PDFont bold, PDFont regular) throws IOException {
-        pw.centered(bold, 14, "REPUBLIKA SEVERNA MAKEDONIJA");
+        pw.centered(bold, 14, "РЕПУБЛИКА СЕВЕРНА МАКЕДОНИЈА");
         pw.space(4);
-        pw.centered(bold, 12, "POTVRDA ZA PODNESENO BARANJE");
+        pw.centered(bold, 12, "ПОТВРДА ЗА ПОДНЕСЕНО БАРАЊЕ");
         pw.space(6);
         pw.line();
         pw.space(8);
 
-        pw.kv(bold, regular, 11, "Ref. broj:", req.getReferenceNumber());
+        pw.kv(bold, regular, 11, "Реф. број:", req.getReferenceNumber());
         pw.space(3);
-        pw.kv(bold, regular, 11, "Datum:", formatDate(req.getCreatedAt()));
+        pw.kv(bold, regular, 11, "Датум:", formatDate(req.getCreatedAt()));
         pw.space(3);
-        pw.kv(bold, regular, 11, "Status:", status(req.getStatus()));
+        pw.kv(bold, regular, 11, "Статус:", status(req.getStatus()));
         pw.space(8);
         pw.line();
         pw.space(8);
 
-        pw.text(bold, 11, "PODNOSITEL");
+        pw.text(bold, 11, "ПОДНОСИТЕЛ");
         pw.space(4);
-        pw.kv(bold, regular, 11, "Ime i prezime:", req.getUserFullName());
+        pw.kv(bold, regular, 11, "Име и презиме:", req.getUserFullName());
         pw.space(3);
-        pw.kv(bold, regular, 11, "E-posta:", req.getUserEmail());
+        pw.kv(bold, regular, 11, "Е-пошта:", req.getUserEmail());
         pw.space(8);
         pw.line();
         pw.space(8);
 
-        pw.text(bold, 11, "DETALI NA BARANJETO");
+        pw.text(bold, 11, "ДЕТАЛИ НА БАРАЊЕТО");
         pw.space(4);
-        pw.kv(bold, regular, 11, "Tip:", type(req.getType()));
+        pw.kv(bold, regular, 11, "Тип:", type(req.getType()));
         pw.space(3);
-        pw.kv(bold, regular, 11, "Naslov:", req.getTitle());
+        pw.kv(bold, regular, 11, "Наслов:", req.getTitle());
         pw.space(4);
-        pw.text(bold, 11, "Opis:");
+        pw.text(bold, 11, "Опис:");
         pw.space(2);
         pw.wrapped(regular, 10, req.getDescription());
 
         if (req.getNotes() != null && !req.getNotes().isBlank()) {
             pw.space(4);
-            pw.text(bold, 11, "Beleski:");
+            pw.text(bold, 11, "Белешки:");
             pw.space(2);
             pw.wrapped(regular, 10, req.getNotes());
         }
@@ -141,7 +141,7 @@ public class PdfGenerationService {
         pw.line();
         pw.space(8);
 
-        pw.text(bold, 11, "ISTORIJA NA STATUS");
+        pw.text(bold, 11, "ИСТОРИЈА НА СТАТУС");
         pw.space(4);
         for (StatusHistoryResponse h : req.getStatusHistory()) {
             String line = "  * " + status(h.getStatus()) + "  -  " + formatDateTime(h.getTimestamp());
@@ -152,35 +152,35 @@ public class PdfGenerationService {
             pw.space(2);
         }
 
-        pw.footer("Generirano: " + formatDateTime(Instant.now()));
+        pw.footer("Генерирано: " + formatDateTime(Instant.now()));
     }
 
     private void buildOfficialDocument(PageWriter pw, DocumentRequestResponse req, PDFont bold, PDFont regular) throws IOException {
-        pw.centered(bold, 14, "REPUBLIKA SEVERNA MAKEDONIJA");
+        pw.centered(bold, 14, "РЕПУБЛИКА СЕВЕРНА МАКЕДОНИЈА");
         pw.space(4);
-        pw.centered(bold, 12, "OFICIJALNA ODLUKA");
+        pw.centered(bold, 12, "ОФИЦИЈАЛНА ОДЛУКА");
         pw.space(6);
         pw.line();
         pw.space(8);
 
-        pw.kv(bold, regular, 11, "Ref. broj:", req.getReferenceNumber());
+        pw.kv(bold, regular, 11, "Реф. број:", req.getReferenceNumber());
         pw.space(3);
-        pw.kv(bold, regular, 11, "Datum na odobruvanje:", formatDate(req.getUpdatedAt()));
+        pw.kv(bold, regular, 11, "Датум на одобрување:", formatDate(req.getUpdatedAt()));
         pw.space(14);
 
-        pw.wrapped(regular, 11, "Baranjeto podneseno od " + req.getUserFullName()
+        pw.wrapped(regular, 11, "Барањето поднесено од " + req.getUserFullName()
                 + " (" + req.getUserEmail() + "),");
         pw.space(4);
-        pw.wrapped(regular, 11, "za: " + type(req.getType()) + " - " + req.getTitle() + ",");
+        pw.wrapped(regular, 11, "за: " + type(req.getType()) + " - " + req.getTitle() + ",");
         pw.space(14);
 
-        pw.centered(bold, 16, "E ODOBRENO");
+        pw.centered(bold, 16, "Е ОДОБРЕНО");
         pw.space(20);
 
         if (req.getNotes() != null && !req.getNotes().isBlank()) {
             pw.line();
             pw.space(8);
-            pw.text(bold, 11, "BELESKI OD ADMINISTRATOR");
+            pw.text(bold, 11, "БЕЛЕШКИ ОД АДМИНИСТРАТОР");
             pw.space(4);
             pw.wrapped(regular, 10, req.getNotes());
             pw.space(8);
@@ -188,7 +188,7 @@ public class PdfGenerationService {
 
         pw.line();
         pw.space(8);
-        pw.text(bold, 11, "ISTORIJA NA STATUS");
+        pw.text(bold, 11, "ИСТОРИЈА НА СТАТУС");
         pw.space(4);
         for (StatusHistoryResponse h : req.getStatusHistory()) {
             String line = "  * " + status(h.getStatus()) + "  -  " + formatDateTime(h.getTimestamp());
@@ -196,30 +196,30 @@ public class PdfGenerationService {
             pw.space(2);
         }
 
-        pw.footer("Generirano: " + formatDateTime(Instant.now()));
+        pw.footer("Генерирано: " + formatDateTime(Instant.now()));
     }
 
     private String status(DocumentRequestStatus s) {
         return switch (s) {
-            case SUBMITTED -> "Podneseno";
-            case IN_REVIEW -> "Vo obrabotka";
-            case REVIEWED -> "Razgledano";
-            case APPROVED -> "Odobreno";
-            case REJECTED -> "Odbiano";
+            case SUBMITTED -> "Поднесено";
+            case IN_REVIEW -> "Во обработка";
+            case REVIEWED -> "Разгледано";
+            case APPROVED -> "Одобрено";
+            case REJECTED -> "Одбиено";
         };
     }
 
     private String type(DocumentRequestType t) {
         return switch (t) {
-            case REQUEST -> "Baranje";
-            case PERMIT -> "Dozvola";
-            case COMPLAINT -> "Zalba";
-            case APPLICATION -> "Aplikacija";
-            case CERTIFICATE -> "Potvrda";
-            case OBJECTION -> "Prigovor";
-            case STATEMENT -> "Izjava";
-            case REPORT -> "Izvestaj";
-            case OTHER -> "Drugo";
+            case REQUEST -> "Барање";
+            case PERMIT -> "Дозвола";
+            case COMPLAINT -> "Жалба";
+            case APPLICATION -> "Апликација";
+            case CERTIFICATE -> "Потврда";
+            case OBJECTION -> "Приговор";
+            case STATEMENT -> "Изјава";
+            case REPORT -> "Извештај";
+            case OTHER -> "Друго";
         };
     }
 
