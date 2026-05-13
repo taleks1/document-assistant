@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -19,4 +20,9 @@ public interface DailyDocumentRequestCounterRepository
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from DailyDocumentRequestCounter c where c.date = :date")
     Optional<DailyDocumentRequestCounter> findByDateForUpdate(@Param("date") LocalDate date);
+
+    @Query("SELECT COALESCE(SUM(c.lastSequence), 0) FROM DailyDocumentRequestCounter c WHERE c.date BETWEEN :from AND :to")
+    long sumBetweenDates(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    List<DailyDocumentRequestCounter> findByDateBetween(LocalDate from, LocalDate to);
 }

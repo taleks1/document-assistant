@@ -1,11 +1,10 @@
 package documentassistant.bootstrap;
 
-import documentassistant.model.entity.DocumentRequest;
-import documentassistant.model.entity.DocumentTemplate;
-import documentassistant.model.entity.User;
+import documentassistant.model.entity.*;
 import documentassistant.model.enums.DocumentRequestStatus;
 import documentassistant.model.enums.DocumentRequestType;
 import documentassistant.model.enums.Role;
+import documentassistant.repository.DailyDocumentRequestCounterRepository;
 import documentassistant.repository.DocumentRequestRepository;
 import documentassistant.repository.DocumentTemplateRepository;
 import documentassistant.repository.UserRepository;
@@ -25,6 +24,7 @@ import java.util.List;
 public class DatabaseSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
+    private final DailyDocumentRequestCounterRepository dailyDocumentRequestCounterRepository;
     private final DocumentTemplateRepository templateRepository;
     private final DocumentRequestRepository requestRepository;
     private final PasswordEncoder passwordEncoder;
@@ -201,6 +201,14 @@ public class DatabaseSeeder implements CommandLineRunner {
                         .description("Need approval for garage construction.")
                         .notes("Attached all required documentation.")
                         .status(DocumentRequestStatus.SUBMITTED)
+                        .createdAt(Instant.now().minusSeconds(172800))
+                        .statusHistory(List.of(
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.SUBMITTED)
+                                        .timestamp(Instant.now().minusSeconds(172800))
+                                        .note("Барањето е поднесено")
+                                        .build()
+                        ))
                         .build(),
 
                 DocumentRequest.builder()
@@ -211,6 +219,18 @@ public class DatabaseSeeder implements CommandLineRunner {
                         .description("Excessive noise during night hours.")
                         .notes("Occurred repeatedly.")
                         .status(DocumentRequestStatus.IN_REVIEW)
+                        .createdAt(Instant.now().minusSeconds(86400))
+                        .statusHistory(List.of(
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.SUBMITTED)
+                                        .timestamp(Instant.now().minusSeconds(86400))
+                                        .note("Барањето е поднесено")
+                                        .build(),
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.IN_REVIEW)
+                                        .timestamp(Instant.now().minusSeconds(85400))
+                                        .build()
+                        ))
                         .build(),
 
                 DocumentRequest.builder()
@@ -221,6 +241,22 @@ public class DatabaseSeeder implements CommandLineRunner {
                         .description("Need birth certificate for university.")
                         .notes("Urgent processing requested.")
                         .status(DocumentRequestStatus.APPROVED)
+                        .createdAt(Instant.now().minusSeconds(86400))
+                        .statusHistory(List.of(
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.SUBMITTED)
+                                        .timestamp(Instant.now().minusSeconds(86400))
+                                        .note("Барањето е поднесено")
+                                        .build(),
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.IN_REVIEW)
+                                        .timestamp(Instant.now().minusSeconds(85400))
+                                        .build(),
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.APPROVED)
+                                        .timestamp(Instant.now().minusSeconds(84400))
+                                        .build()
+                        ))
                         .build(),
 
                 DocumentRequest.builder()
@@ -232,9 +268,36 @@ public class DatabaseSeeder implements CommandLineRunner {
                         .notes("Photos attached.")
                         .status(DocumentRequestStatus.REJECTED)
                         .rejectionReason("Insufficient evidence.")
+                        .statusHistory(List.of(
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.SUBMITTED)
+                                        .timestamp(Instant.now())
+                                        .note("Барањето е поднесено")
+                                        .build(),
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.IN_REVIEW)
+                                        .timestamp(Instant.now())
+                                        .build(),
+                                StatusHistory.builder()
+                                        .status(DocumentRequestStatus.REJECTED)
+                                        .timestamp(Instant.now())
+                                        .build()
+                        ))
                         .build()
         );
 
+        List<DailyDocumentRequestCounter> requestCounters = List.of(
+                new DailyDocumentRequestCounter(LocalDate.now().minusMonths(5),28),
+                new DailyDocumentRequestCounter(LocalDate.now().minusMonths(4),18),
+                new DailyDocumentRequestCounter(LocalDate.now().minusMonths(3),44),
+                new DailyDocumentRequestCounter(LocalDate.now().minusMonths(2),30),
+                new DailyDocumentRequestCounter(LocalDate.now().minusMonths(1),23),
+                new DailyDocumentRequestCounter(LocalDate.now().minusDays(2),1),
+                new DailyDocumentRequestCounter(LocalDate.now().minusDays(1),2),
+                new DailyDocumentRequestCounter(LocalDate.now(),1)
+        );
+
         requestRepository.saveAll(requests);
+        dailyDocumentRequestCounterRepository.saveAll(requestCounters);
     }
 }
