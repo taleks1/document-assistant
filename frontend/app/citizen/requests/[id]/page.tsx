@@ -1,6 +1,7 @@
 "use client"
 
 import { use, useState, useEffect } from "react"
+import { formatDate, formatDateTime } from "@/lib/utils"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -106,11 +107,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     <div>
                       <p className="text-sm font-medium text-foreground">Датум на поднесување</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(request.createdAt).toLocaleDateString("mk-MK", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
+                        {formatDate(request.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -128,6 +125,96 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                   <p className="text-sm text-muted-foreground">{request.notes}</p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Extracted Data */}
+          <Card className="overflow-hidden border-border shadow-sm">
+            <CardHeader className="border-b border-border bg-muted/30">
+              <CardTitle>Информации за апликантот</CardTitle>
+              <CardDescription>
+                Податоци извлечени од вашиот документ за лична идентификација
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="p-6">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-400">
+                      <User className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Име и презиме</p>
+                      <p className="text-sm text-muted-foreground">
+                        {request.extractedData.firstName} {request.extractedData.lastName}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-green-400 to-emerald-400">
+                      <CreditCard className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Број на личен документ</p>
+                      <p className="text-sm text-muted-foreground">{request.extractedData.idNumber}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-400">
+                      <CreditCard className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">ЕМБГ</p>
+                      <p className="text-sm text-muted-foreground">{request.extractedData.embg}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-400">
+                      <Calendar className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Датум на раѓање</p>
+                      <p className="text-sm text-muted-foreground">{request.extractedData.dateOfBirth}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-purple-400">
+                      <Calendar className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Важност на документот</p>
+                      <p className="text-sm text-muted-foreground">
+                        {request.extractedData.documentExpiryDate}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-indigo-400">
+                      <MapPin className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Адреса</p>
+                      <p className="text-sm text-muted-foreground">{request.extractedData.address}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -209,13 +296,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                           {DocumentRequestStatusLabel[history.status] ?? history.status}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(history.timestamp).toLocaleDateString("mk-MK", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {formatDateTime(history.timestamp)}
                         </p>
                         {history.note && (
                           <p className="mt-1 text-xs text-muted-foreground">{history.note}</p>

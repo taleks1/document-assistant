@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { formatDateTime } from "@/lib/utils"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
@@ -302,13 +303,7 @@ export default function AdminRequestDetailPage() {
                   <div>
                     <p className="text-sm font-medium text-foreground">Датум на поднесување</p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(requestData.createdAt).toLocaleDateString("mk-MK", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {formatDateTime(requestData.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -361,13 +356,7 @@ export default function AdminRequestDetailPage() {
                         {DocumentRequestStatusLabel[history.status] ?? history.status}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(history.timestamp).toLocaleDateString("mk-MK", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatDateTime(history.timestamp)}
                       </p>
                       {history.note && (
                         <p className="mt-1 text-xs text-muted-foreground">{history.note}</p>

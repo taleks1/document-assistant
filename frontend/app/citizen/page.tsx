@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
+import { formatDate } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -152,9 +153,9 @@ export default function CitizenDashboard() {
                       {request.title}
                     </TableCell>
 
-                    <TableCell className="border-y border-border bg-white px-3 py-3 text-center text-slate-700 shadow-sm">
-                      {new Date(request.createdAt).toLocaleDateString("mk-MK")}
-                    </TableCell>
+              <TableCell className="border-y border-border bg-white px-3 py-3 text-center text-slate-700 shadow-sm">
+                {formatDate(request.createdAt)}
+              </TableCell>
 
                     <TableCell className="border-y border-border bg-white px-3 py-3 text-center shadow-sm">
                       <div className="flex justify-center">
