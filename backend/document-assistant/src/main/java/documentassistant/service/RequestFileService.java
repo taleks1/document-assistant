@@ -3,6 +3,8 @@ package documentassistant.service;
 import documentassistant.exception.ResourceNotFoundException;
 import documentassistant.model.entity.DocumentRequest;
 import documentassistant.model.entity.RequestFile;
+import documentassistant.model.entity.User;
+import documentassistant.model.enums.Role;
 import documentassistant.payload.RequestFileResponse;
 import documentassistant.repository.DocumentRequestRepository;
 import documentassistant.repository.RequestFileRepository;
@@ -77,8 +79,7 @@ public class RequestFileService {
 
     @Transactional(readOnly = true)
     public List<RequestFileResponse> getFiles(Long requestId) {
-        requestRepository.findByIdAndUser(requestId, userService.getCurrentUser())
-                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
+        validateRequestAccess(requestId);
 
         return fileRepository.findAllByDocumentRequest_Id(requestId).stream()
                 .map(RequestFileResponse::from)
@@ -87,8 +88,7 @@ public class RequestFileService {
 
     @Transactional(readOnly = true)
     public RequestFile getFile(Long requestId, Long fileId) {
-        requestRepository.findByIdAndUser(requestId, userService.getCurrentUser())
-                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
+        validateRequestAccess(requestId);
 
         return fileRepository.findByIdAndDocumentRequest_Id(fileId, requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("File not found"));
@@ -104,6 +104,17 @@ public class RequestFileService {
             return resource;
         } catch (Exception e) {
             throw new ResourceNotFoundException("File not found: " + e.getMessage());
+        }
+    }
+
+    private DocumentRequest validateRequestAccess(Long requestId) {
+        User currentUser = userService.getCurrentUser();
+        if (currentUser.getRole() == Role.ADMIN) {
+            return requestRepository.findById(requestId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
+        } else {
+            return requestRepository.findByIdAndUser(requestId, currentUser)
+                    .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
         }
     }
 
