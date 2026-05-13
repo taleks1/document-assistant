@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { AppSidebar } from "@/components/app-sidebar"
+import { Chatbot } from "@/components/chatbot"
 
 export default function CitizenLayout({
   children,
@@ -39,6 +40,7 @@ export default function CitizenLayout({
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>
+      <Chatbot />
     </div>
   )
 }

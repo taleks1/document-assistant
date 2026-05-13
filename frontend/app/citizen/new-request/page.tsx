@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -50,6 +50,7 @@ import {
   UserIdentityDocumentResponse,
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { CHATBOT_PREFILL_KEY } from "@/components/chatbot";
 
 const requestTypeLabels: Record<string, string> = {
   request: "Барање",
@@ -193,6 +194,32 @@ export default function NewRequestPage() {
       notes: "",
     },
   });
+
+  // Pre-fill form when arriving from the chatbot assistant
+  useEffect(() => {
+    const raw = sessionStorage.getItem(CHATBOT_PREFILL_KEY)
+    if (!raw) return
+    sessionStorage.removeItem(CHATBOT_PREFILL_KEY)
+    try {
+      const p = JSON.parse(raw)
+      form.reset({
+        firstName: p.firstName ?? "",
+        lastName: p.lastName ?? "",
+        idNumber: p.idNumber ?? "",
+        address: p.address ?? "",
+        dateOfBirth: p.dateOfBirth ?? "",
+        embg: p.embg ?? "",
+        documentExpiryDate: p.documentExpiryDate ?? "",
+        requestType: p.requestType ?? "request",
+        requestTitle: p.requestTitle ?? "",
+        description: p.description ?? "",
+        notes: "",
+      })
+      setStep("form")
+    } catch {
+      // ignore malformed prefill
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFileDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
